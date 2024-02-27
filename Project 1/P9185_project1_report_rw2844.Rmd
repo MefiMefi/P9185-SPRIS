@@ -1,0 +1,368 @@
+---
+title: "P9185_Project1_Report_rw2844"
+author: "Ryan Wei"
+output: 
+  bookdown::pdf_document2:
+    toc: no
+    collapsed: no
+    theme: readable
+    citation_package: natbib
+#bibliography: ["p8157final.bib"]
+biblio-style: "apalike"
+link-citations: true
+geometry: "margin=1in"
+fontsize: 12pt
+linestretch: 1.5
+header-includes:
+  - \usepackage{appendix}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = F, warning = F)
+options(knitr.kable.NA = '')
+library(tidyverse)
+library(lme4)
+library(nlme)
+library(lattice)
+library(gtsummary)
+library(DHARMa)
+library(knitr)
+library(kableExtra)
+library(webshot)
+
+write_matex <- function(x) {
+  begin <- "$$\\begin{bmatrix}"
+  end <- "\\end{bmatrix}$$"
+  X <-
+    apply(x, 1, function(x) {
+      paste(
+        paste(x, collapse = "&"),
+        "\\\\"
+      )
+    })
+  writeLines(c(begin, X, end))
+}
+theme_set(
+  theme_bw()+
+  theme(
+    plot.title = element_text(size = 16, hjust = 0.5),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(size = 12),
+    axis.text = element_text(size = 10),
+    axis.line = element_line(color = "black", size = 0.5),
+  )
+)
+```
+
+```{r load_data}
+baseline.dat <- read.csv("baseline.csv")
+endpoints.dat <- read.csv("endpoints.csv")
+```
+
+```{r datacleaning_basic}
+endpoints.AE <-
+  endpoints.dat %>% 
+  select(ptid,  AE_pillA_week1:AE_gelC_week4) %>% 
+  pivot_longer(
+    cols = starts_with("AE_"),
+    names_to = c("drug", "week"),
+    names_pattern = "AE_(.*)_(week\\d+)",
+    values_to = "AE"
+  ) %>%
+  mutate(drug = case_when(
+    str_detect(drug, "pillA") ~ "Pill A",
+    str_detect(drug, "gelB") ~ "Gel B",
+    str_detect(drug, "gelC") ~ "Gel C"
+  ),
+  week = parse_number(week))
+
+endpoints.Adhere <-
+  endpoints.dat %>% 
+  select(ptid, Adhere_pillA_week1:Adhere_gelC_week4) %>% 
+  pivot_longer(
+    cols = starts_with("Adhere_"),
+    names_to = c("drug", "week"),
+    names_pattern = "Adhere_(.*)_(week\\d+)",
+    values_to = "Adhere"
+  ) %>%
+  mutate(drug = case_when(
+    str_detect(drug, "pillA") ~ "Pill A",
+    str_detect(drug, "gelB") ~ "Gel B",
+    str_detect(drug, "gelC") ~ "Gel C"
+  ),
+  week = parse_number(week)) %>% 
+  mutate(drug = factor(drug, levels = c("Pill A", "Gel B", "Gel C")))
+
+endpoints.period <- 
+  endpoints.dat %>% 
+  select(ptid, period1:period3) %>% 
+  mutate(sequence = case_when(
+    period1 == "Pill A" & period2 == "Gel B" & period3 == "Gel C" ~ "ABC",
+    period1 == "Pill A" & period2 == "Gel C" & period3 == "Gel B" ~ "ACB",
+    period1 == "Gel B" & period2 == "Gel C" & period3 == "Pill A" ~ "BCA",
+    period1 == "Gel B" & period2 == "Pill A" & period3 == "Gel C" ~ "BAC",
+    period1 == "Gel C" & period2 == "Pill A" & period3 == "Gel B" ~ "CAB",
+    period1 == "Gel C" & period2 == "Gel B" & period3 == "Pill A" ~ "CBA",
+    TRUE ~ "Other" # This is the default case
+  )) %>% 
+  mutate(
+    seq1 = case_when(
+    sequence == "ABC" ~ 1,
+    sequence == "CAB" ~ 2,
+    sequence == "BCA" ~ 3,
+    sequence == "BAC" ~ 4,
+    sequence == "ACB" ~ 5,
+    sequence == "CBA" ~ 6,
+  ),
+    seq2 = case_when(
+      sequence == "ABC" | sequence == "BAC" ~ 0,
+      sequence == "CAB" | sequence == "ACB" ~ 1,
+      sequence == "BCA" | sequence == "CBA" ~ 2
+    )) %>% 
+  pivot_longer(
+    cols = starts_with("period"),
+    names_prefix = "period",
+    names_to = "period",
+    values_to = "drug"
+  ) %>% 
+  mutate(period = as.numeric(period)) %>% 
+  mutate(drug = factor(drug, levels = c("Pill A", "Gel B", "Gel C"))) %>% 
+  mutate(seq2 = factor(seq2, levels = c(0,1,2), labels = c("AB", "AC", "BC")))
+
+endpoints.lag <- 
+  endpoints.period %>% 
+  select(ptid, period, drug) %>% 
+  group_by(ptid) %>% 
+  mutate(drug_lag = lag(as.character(drug))) %>% 
+  ungroup() %>% 
+  replace_na(list(drug_lag = "None")) %>% 
+  mutate(
+    A_lag = ifelse(drug_lag == "Pill A", 1, 0),
+    B_lag = ifelse(drug_lag == "Gel B", 1, 0),
+    C_lag = ifelse(drug_lag == "Gel C", 1, 0)
+  )%>% 
+  mutate(drug = factor(drug, levels = c("Pill A", "Gel B", "Gel C")))
+
+endpoints.period <- left_join(endpoints.period, endpoints.lag)
+
+endpoints.AE <- left_join(endpoints.AE, endpoints.period)
+
+endpoints.Adhere <- left_join(endpoints.Adhere, endpoints.period)
+```
+
+```{r datacleaning_model}
+endpoints.AE.weeksum <- 
+  endpoints.AE %>% 
+  select(-week) %>% 
+  group_by(ptid,drug,period) %>% 
+  mutate(AE_sum  = sum(AE)) %>% 
+  ungroup() %>% 
+  mutate(AE_ind = as.factor(ifelse(AE_sum > 0, 1, 0))) %>% 
+  select(-AE) %>% 
+  distinct() %>% 
+  mutate(drug = factor(drug, levels = c("Pill A", "Gel B", "Gel C")))
+
+endpoints.Adhere <-
+  endpoints.Adhere %>% 
+  mutate(total_week = period*week,
+         nonAdhere = 7-Adhere)
+```
+
+```{r datacleaning_PK}
+# 0- baseline; 1- 1st treatment; 2- 1st wash out; 3- 2nd treatment;
+# 4- 2nd wash out; 5- third treatment; 6- third wash out
+endpoints.PK <-
+  baseline.dat %>% 
+  select(ptid, bviral0:sviral6) %>% 
+  mutate(
+    dbvial1 = -bviral1 - bviral0,
+    dsvial1 = -sviral1 - sviral0,
+    dbvial2 = -bviral3 - bviral2,
+    dsvial2 = -sviral3 - sviral2,
+    dbvial3 = -bviral5 - bviral4,
+    dsvial3 = -sviral5 - sviral4
+  ) %>% 
+  pivot_longer(
+    cols = starts_with("d"),
+    names_to = c("measure", "period"),
+    names_pattern = "d(.*vial)(\\d+)",
+    values_to = "dvalue"
+  ) %>% 
+  select(ptid, measure, period, dvalue) %>% 
+  mutate(period = as.numeric(period),
+         dvalue = -dvalue) 
+  
+
+```
+
+
+```{r datacleaning_primary}
+endpoints.Adhere.sum <-
+  endpoints.Adhere %>% 
+  select(ptid, period, week, Adhere) %>% 
+  group_by(ptid, period) %>% 
+  summarize(Adhere_sum  = sum(Adhere)) %>% 
+  mutate(Adhere_rate = Adhere_sum/28)
+
+endpoints.PK <- left_join(endpoints.PK, endpoints.Adhere.sum)
+endpoints.PK <- 
+  left_join(endpoints.PK, endpoints.AE.weeksum) %>% 
+  mutate(drug = factor(drug, levels = c("Pill A", "Gel B", "Gel C"))) %>% 
+  mutate(measure = factor(measure, labels = c("Skin", "Blood"),levels = c("svial", "bvial"))) %>% 
+  mutate(AE_ind = factor(ifelse(AE_ind == 1,"Yes", "No")))
+
+#endpoints.PK.bvial <- endpoints.PK %>% filter(measure == "bvial")
+#endpoints.PK.svial <- endpoints.PK %>% filter(measure == "svial")
+```
+
+
+```{r datacleaning_secondary}
+Adhere.demo <-
+  baseline.dat %>% 
+  select(ptid, age, gender, race) %>% 
+  mutate(
+    gender = factor(gender, labels = c("male", "female"), levels = c(0,1)),
+    race = factor(race, levels = c("white", "black", "others"))
+  )
+
+endpoints.Adhere.total <- 
+  endpoints.Adhere.sum %>% 
+  select(ptid, Adhere_sum) %>% 
+  group_by(ptid) %>% 
+  summarize(Adhere_total = sum(Adhere_sum))
+
+Adhere.demo <- left_join(Adhere.demo, endpoints.Adhere.total) %>% 
+  mutate(non_Adhere_total = 84 - Adhere_total)
+```
+
+
+# Introduction
+
+MATIK	is	a	newly	discovered,	highly	contagious	viral	skin	disease	that	causes serious	skin	rash	and	infections	in	patients,	and	could	even	be	life	threatening.	
+
+Several	scientific	labs	and drug	companies	are	actively	engaged	in	developing drugs	to	battle	the	emerging	epidemic.		From	all	the	biological	and	animal	studies,three	medications,	one	oral	Pill	and	two	skin	gels,	appeared	to	be	promising.		We denote	the	three	medications	by	Pill	A, Gel	B	and	Gel	C. Phase	I	trials	have	already	been	conducted	to	determine	their	maximum	tolerated	doses	among	patients.
+
+Due	to	urgent	need,	researchers/clinicians	decide	to	conduct	a	phase	II	trial	to evaluate	the	safety	and	adherence	of	all	the	three	medications	simultaneously.	
+
+Based	on	the	information	collected	from	the	Phase	I	trials,	and	earlier	cell	line	and	animal	studies.	The	following	doses shown in Table \@ref(tab:dose-tab)	will	be	used	in	the	trial.	
+
+
+```{r dose-tab}
+# Create a data frame with the table information
+table_trt <- data.frame(
+  Treatment = c("Pill A", "Gel B", "Gel C"),
+  Description = c("200 mg, once a day for 4 weeks",
+                  "1% gel concentration; three times a day on affected areas, daily use for 4 weeks",
+                  "2% gel concentration; once a day on affected areas, daily use for 4 weeks")
+)
+
+# Generate the table with kable and style it with kableExtra
+kable(table_trt, "latex", booktabs = TRUE, caption = "Recommended doses/administration schedule") %>%
+  kable_styling(position = "center", latex_options = "hold_position") %>%
+  column_spec(1, bold = TRUE)
+```
+
+
+# Method
+
+## Study Design
+
+### Patient population	and	recruitment
+
+Approximately	180	MATIK	patients	will	be	recruited	from	a	variety	of	health	care facilities,	including	hospitals,	primary	care	clinics,	and	community-based	health services.	Recruitment	materials	will	be	approved	by	site	Institutional	Review Boards/Ethics	Committees	(IRBs/ECs).	Accrual	is	expected	to	be	completed	in approximately	6-9	months	per	site.
+
+### Study	Regimen
+
+Study	participants	will	be	randomized	to	one	of	six	regimen	sequences	(Sequence	1-6,	see	Table	\@ref(tab:trt-seq-tab)). Each	sequence	will	consist	of	three	4	week	periods	of	study	product	administration	followed	by	at	least	a	one-week	washout	period.	
+The	duration	of	product	administration	including	the	two	washout	periods	is approximately	15	weeks.	Participants	will	receive	study	product	at the	recommended	dose,	and	be administered	in	the	order	designated	by their	randomized	sequence	(1-6).
+
+```{r trt-seq-tab}
+study_regimen <- data.frame(
+  Sequence = 1:6,
+  `Period 1` = c("Pill A", "Gel C", "Gel B", "Gel B", "Pill A", "Gel C"),
+  `Period 2` = c("Gel B", "Pill A", "Gel C", "Pill A", "Gel C", "Gel B"),
+  `Period 3` = c("Gel C", "Gel B", "Pill A", "Gel C", "Gel B", "Pill A")
+)
+
+# Generate the table with kable and kableExtra
+kable(study_regimen, "latex", booktabs = TRUE, col.names = c("Sequence", "Period 1", "period 2", "Period 3"), caption = "Study Regimen") %>%
+  kable_styling(latex_options = c("hold_position"), full_width = FALSE, position = "center")
+```
+
+
+## Study Objectives	and	Endpoints
+
+### Primary	Objectives
+
+Since	MATIK	is	a	chronic	condition, patients	will	reply	on	long-term	medications	to	control	their	viral	loads.	The	primary	objective	of this	trial	is	to	compare	the	safety	and	adherence	profiles	of	Pill	A,	Gel	B,	and	Gel	C, i.e.	1)	whether	the	medications	are	safe	for	patients,	2)	and	whether	patients	could	easily	adhere	to	medication	schedules	so	that	long	term	use	is feasible.
+
+### Secondary	Objectives
+
+The	secondary	objective	of	the	trial	is	to	have	preliminary	assessment and	comparison	of systemic	and	local	Pharmacokinetics	(PK) of	Pill	A,	Gel	B,	and	Gel	C. Additionally,	the	investigators	are	interested	to:	1)	assess	the	correlation	of	PK with	adherence	measures	and	the	occurrence	of	adverse	events	and	2)	identify demographic	factors	associated	with	product	adherence	and	whether	they	differ by	product	used	(Pill	or	gel)	or	regimen	(three	times	a	day	or	once	a	day).
+
+## Endpoints and	their	collection schedules
+
+### Primary Endpoints
+
+During	each	week	of	the	4-week	trial	periods,	participants	were	followed	up	every	week	to	record	the	following	measures: 1) Safety:	The	number	of	grade	2	or	higher	adverse	events	occurred	during that	week. 2) Adherence:	The	number	of	days	(out	of	7	days)	that	patients	are	able	to take	pills	or	apply	gels	as	prescribed.	
+
+### Secondary Endpoints
+
+Pharmacokinetics: The	viral	loads	in	the	blood	plasma	and	affected	skin tissues	were	measured	at	the	beginning	and	at	the	end	of each	period.
+
+### Demographics
+
+Demographic	data	including	age,	gender	and	race	of	the	recruited	patients were	collected	at baseline.
+
+## Statistical Analyses
+
+### Primary Analysis
+
+#### Analysis on Safety of the Treatments
+
+In this trial, patients were assigned to different sequences (see Table \@ref(tab:trt-seq-tab)) of treatment regimens to examine the comparative safety and adherence profiles of the medications for long-term management of MATIK. To investigate the potential for carry-over effects, where the sequence of administered treatments could influence subsequent outcomes, we built the following generalized mixed effects model with logit link to analysis the carry-over effects:
+
+$$\operatorname{logit}\left(\Pr(Y_{ij} = 1 \mid \mathbf{X}_{ij}, b_{i0})\right) = \beta_0 + \beta_1\cdot \text{Period}_{ij} + \beta_2\cdot\mathbf{I}(\text{Sequence 2}_{i}= 1) + \beta_3\cdot\mathbf{I}(\text{Sequence 2}_{i}=2) + b_{0i},$$
+where $Y_{ij}$ is the indicator of occurrence of any adverse event within the period $j$ for patient $i$, $i = 1,\ldots,180$, $j = 1,2,3$. We used this summarized outcome for adverse event because the adverse events are rare events. We also used the same outcome for the subsequent analyses on safety of the treatments. $\text{Period}_{ij}$ is the $j$-th period number of patient $i$. $\mathbf{I}(\text{Sequence 2}_{i}=k)$ are the dummy variables for the sequence of the treatments the patient $i$ received, where the reference level is $\text{Sequence 2}_{i}= 0$, which means the patients received either ABC or BAC, $\text{Sequence 2}_{i}= 1$ means the patients received either CAB or ACB, and $\text{Sequence 2}_{i}= 2$ means the patients received either BCA or CBA. We did this translation since testing the null hypothesis of no carry-over effects, i.e., $H_0: \ \rho_A = \rho_B = \rho_C = 0$, where $\rho_k$ is the carry-over effect of treatment $k$, is the same as testing the following null hypothesis, $H_0: \ \rho_A+ \rho_B = \rho_A+ \rho_C = \rho_B + \rho_C = 0$. Random intercepts are included to account for the clustered data.  
+
+To analyses the treatment effects on the adverse events (after excluding the possibility of the existence of carry-over effects). We used the following generalized mixed effects model with logit link to analysis the treatment effects:
+$$\begin{aligned}
+\text{logit}(\Pr(Y_{ij} = 1 \mid \textbf{X}_{ij}, b_{i0})) = & \ \beta_0  + \beta_1 \cdot\mathbf{I}\left(\text{Treatment}_{ij}={\text{Gel B}}\right)+ \beta_2 \cdot \mathbf{I}\left(\text{Treatment}_{ij}={\text{Gel C}}\right)+ \beta_3 \cdot \text{Period}_{ij} \\
+&+ \beta_4\cdot\text{Age}_i + \beta_5\cdot\mathbf{I}(\text{Gender}_i = \text{female})+ \beta_6\cdot\mathbf{I}(\text{Race}_i = \text{black}) + \beta_7\cdot\mathbf{I}(\text{Race}_i = \text{others}) + b_{i0},
+\end{aligned}$$
+where $\mathbf{I}(A)$ is the indicator of event $A$, $\mathbf{I}(A) = 0$ is $A$ does not happen, $\mathbf{I}(A) = 1$ is $A$ does happen. Demographic variables are included in the model to reduce variance of the estimates and control for the confounding.
+
+#### Analysis on Adherence of Treatments
+
+As in the analysis of adverse effects above, we built the following similar generalized mixed effects model with logit link to analysis the carry-over effects on the treatment adherence:
+
+$$\operatorname{logit}\left(p_{ijk}\mid \mathbf{X}_{ijk},b_{0i}\right) = \beta_0 + \beta_1\cdot \text{Period}_{ij} + \beta_2\cdot\text{Week}_{ijk} + \beta_3 \cdot\mathbf{I}(\text{Sequence 2}_{i}= 1) + \beta_4\cdot\mathbf{I}(\text{Sequence 2}_{i}=2) + b_{0i},$$
+where $p_{ijk}$ is the probability of the $i$-th patient adhered to the treatment in week $k$ during period $j$. We assumed the observed outcome $Y_{ijk}$, which is the number of the number of days (out of 7 days) that patients are able to take pills or apply gels as prescribed, follows a $\operatorname{Binomial}(7,p_{ijk})$ distribution. We also used the same outcome for the subsequent analyses on adherence of the treatments. Random intercepts are included to account for the clustered data.  
+
+To analyses the treatment effects on the treatment adherence (after excluding the possibility of the existence of carry-over effects). We used the following generalized mixed effects model with logit link to analysis the treatment effects:
+$$\begin{aligned}
+\text{logit}(p_{ijk}\mid \mathbf{X}_{ijk},b_{0i}) = & \ \beta_0  + \beta_1 \cdot\mathbf{I}\left(\text{Treatment}_{ij}={\text{Gel B}}\right)+ \beta_2 \cdot \mathbf{I}\left(\text{Treatment}_{ij}={\text{Gel C}}\right)+ \beta_3 \cdot \text{Period}_{ij} + \beta_4\cdot\text{Week}_{ijk} \\
+&+ \beta_5\cdot\text{Age}_i + \beta_6\cdot\mathbf{I}(\text{Gender}_i = \text{female})+ \beta_7\cdot\mathbf{I}(\text{Race}_i = \text{black}) + \beta_8\cdot\mathbf{I}(\text{Race}_i = \text{others}) + b_{i0}.
+\end{aligned}$$
+
+### Secondary Analysis
+
+#### Correlation of	PK with	adherence	measures and	the	occurrence	of adverse	events
+
+
+
+
+# Result
+
+# Discussion
+
+\newpage
+# Appendix {-}
+
+\newpage
+## A.2 Code for This Report {-}
+
+\fontsize{10pt}{12pt}\selectfont
+```{r ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
+```
+

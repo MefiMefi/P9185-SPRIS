@@ -432,6 +432,45 @@ gt.demo <- tbl.demo %>% as_gt()
 gt::gtsave(gt.demo, file = "./image/tbl_demo.png")
 ```
 
+
+```{r}
+endpoints.Adhere.regimen <-
+  endpoints.Adhere %>% 
+  mutate(product = factor(ifelse(drug == "Pill A", "Pill", "Gel"), levels = c("Pill", "Gel")),
+         freq = factor(case_when(
+           drug == "Pill A" ~ "once",
+           drug == "Gel B" ~ "three times",
+           drug == "Gel C" ~ "once"
+         ), levels = c("once", "three times")))
+
+model.Adhere.product.1 <- glmtoolbox::glmgee(cbind(Adhere, nonAdhere) ~ period + age*product + gender*product + race*product, data = endpoints.Adhere.regimen, family = binomial, id = ptid, corstr = "Independence")
+
+model.Adhere.product.2 <- glmtoolbox::glmgee(cbind(Adhere, nonAdhere) ~ period + age*product + gender*product + race*product, data = endpoints.Adhere.regimen, family = binomial, id = ptid, corstr = "AR-M-dependent(1)")
+
+model.Adhere.product.3 <- glmtoolbox::glmgee(cbind(Adhere, nonAdhere) ~ period + age*product + gender*product + race*product, data = endpoints.Adhere.regimen, family = binomial, id = ptid, corstr = "Exchangeable")
+
+AIC(model.Adhere.product.1)
+AIC(model.Adhere.product.2)
+AIC(model.Adhere.product.3)
+
+summary(model.Adhere.product.1)
+summary(model.Adhere.product.2)
+summary(model.Adhere.product.3)
+
+model.Adhere.freq.1 <- glmtoolbox::glmgee(cbind(Adhere, nonAdhere) ~ period + age*freq + gender*freq + race*freq, data = endpoints.Adhere.regimen, family = binomial, id = ptid, corstr = "Independence")
+model.Adhere.freq.2 <- glmtoolbox::glmgee(cbind(Adhere, nonAdhere) ~ period + age*freq + gender*freq + race*freq, data = endpoints.Adhere.regimen, family = binomial, id = ptid, corstr = "AR-M-dependent(1)")
+model.Adhere.freq.3 <- glmtoolbox::glmgee(cbind(Adhere, nonAdhere) ~ period + age*freq + gender*freq + race*freq, data = endpoints.Adhere.regimen, family = binomial, id = ptid, corstr = "Exchangeable")
+
+AIC(model.Adhere.freq.1)
+AIC(model.Adhere.freq.2)
+AIC(model.Adhere.freq.3)
+
+summary(model.Adhere.product.1)
+summary(model.Adhere.product.2)
+summary(model.Adhere.product.3)
+```
+
+
 ### Demographic difference 
 
 ## Table one
