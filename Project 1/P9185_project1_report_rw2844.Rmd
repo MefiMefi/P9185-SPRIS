@@ -330,7 +330,7 @@ $$\begin{aligned}
 \text{logit}(\Pr(Y_{ij} = 1 \mid \textbf{X}_{ij}, b_{i0})) = & \ \beta_0  + \beta_1 \cdot\mathbf{I}\left(\text{Treatment}_{ij}={\text{Gel B}}\right)+ \beta_2 \cdot \mathbf{I}\left(\text{Treatment}_{ij}={\text{Gel C}}\right)+ \beta_3 \cdot \text{Period}_{ij} \\
 &+ \beta_4\cdot\text{Age}_i + \beta_5\cdot\mathbf{I}(\text{Gender}_i = \text{female})+ \beta_6\cdot\mathbf{I}(\text{Race}_i = \text{black}) + \beta_7\cdot\mathbf{I}(\text{Race}_i = \text{others}) + b_{i0},
 \end{aligned}$$
-where $\mathbf{I}(A)$ is the indicator of event $A$, $\mathbf{I}(A) = 0$ is $A$ does not happen, $\mathbf{I}(A) = 1$ is $A$ does happen. Demographic variables are included in the model to reduce variance of the estimates and control for the confounding.
+where $\mathbf{I}(A)$ is the indicator of event $A$, $\mathbf{I}(A) = 0$ is $A$ does not happen, $\mathbf{I}(A) = 1$ is $A$ does happen. Demographic variables are included in the model to reduce variance of the estimates and control for the confounding. Age are centered for better interpretation (average age of this study is `r round(mean(baseline.dat$age),3)`).
 
 #### Analysis on Adherence of Treatments
 
@@ -345,11 +345,41 @@ $$\begin{aligned}
 &+ \beta_5\cdot\text{Age}_i + \beta_6\cdot\mathbf{I}(\text{Gender}_i = \text{female})+ \beta_7\cdot\mathbf{I}(\text{Race}_i = \text{black}) + \beta_8\cdot\mathbf{I}(\text{Race}_i = \text{others}) + b_{i0}.
 \end{aligned}$$
 
+
 ### Secondary Analysis
 
-#### Correlation of	PK with	adherence	measures and	the	occurrence	of adverse	events
+#### Correlation of	PK with	Adherence	Measures and the Occurrence	of Adverse Events
 
+To investigate the association between safety, adherence and PK outcomes, we first built the following models to exam the existence of carry-over effect, as we did in the primary analyses:
+$$\begin{aligned}\Delta\text{Skin Viral Load}_{ij} &=\beta_0 + \beta_1\cdot \text{Period}_{ij} + \beta_2\cdot\mathbf{I}(\text{Sequence 2}_{i}= 1) + \beta_3\cdot\mathbf{I}(\text{Sequence 2}_{i}=2) + b_{0i},\\
+\Delta\text{Blood Viral Load}_{ij} &=\gamma_0 + \gamma_1\cdot \text{Period}_{ij} + \gamma_3\cdot\mathbf{I}(\text{Sequence 2}_{i}= 1) + \gamma_3\cdot\mathbf{I}(\text{Sequence 2}_{i}=2) + b_{0i}.
+\end{aligned}
+$$
 
+Here $\Delta\text{Skin Viral Load}_{ij}$ and $\Delta\text{Blood Viral Load}_{ij}$ are the change in skin/ blood viral load for patient $i$, calculated by subtracting after period (treatment) viral load from the viral load before each period (baseline viral load for $j = 1$, viral loads after wash out period for $j = 2,3$), respectively.
+
+To analyses the effects of safety outcomes and adherence outcomes on PK outcomes, together with the treatment effects on systemic	and	local viral loads, the following linear mixed effects models are built:
+$$\begin{aligned}\Delta\text{Skin Viral Load}_{ij} &= \ \beta_0  + \beta_1 \cdot\mathbf{I}\left(\text{Treatment}_{ij}={\text{Gel B}}\right)+ \beta_2 \cdot \mathbf{I}\left(\text{Treatment}_{ij}={\text{Gel C}}\right)+ \beta_3 \cdot \text{Period}_{ij} \\
+&+ \beta_4\cdot\mathbf{I}\left(\text{Number of adverse event}_{ij}\ge1\right)  + \beta_4\cdot\text{Number of days of adherence}_{ij}\\
+&+\beta_4\cdot\text{Age}_i + \beta_5\cdot\mathbf{I}(\text{Gender}_i = \text{female})+ \beta_6\cdot\mathbf{I}(\text{Race}_i = \text{black}) + \beta_7\cdot\mathbf{I}(\text{Race}_i = \text{others}) + b_{i0},
+\end{aligned}
+$$
+and
+$$\begin{aligned}\Delta\text{Blood Viral Load}_{ij} &= \ \gamma_0  + \gamma_1 \cdot\mathbf{I}\left(\text{Treatment}_{ij}={\text{Gel B}}\right)+ \gamma_2 \cdot \mathbf{I}\left(\text{Treatment}_{ij}={\text{Gel C}}\right)+ \gamma_3 \cdot \text{Period}_{ij} \\
+&+ \gamma_4\cdot\mathbf{I}\left(\text{Number of adverse event}_{ij}\ge1\right)  + \gamma_4\cdot\text{Number of days of adherence}_{ij}\\
+&+\gamma_4\cdot\text{Age}_i + \gamma_5\cdot\mathbf{I}(\text{Gender}_i = \text{female})+ \gamma_6\cdot\mathbf{I}(\text{Race}_i = \text{black}) + \gamma_7\cdot\mathbf{I}(\text{Race}_i = \text{others}) + b_{i0},
+\end{aligned}
+$$
+where the number of days of adherence in the period is centered at the mean adherence day of that period.
+
+#### Identify Demographic Factors associated with Product Adherence
+
+In order to identify demographic factors associated	with product adherence and	whether	they	differ by product used	(Pill	or Gel) or	regimen	(three times	a	day	or once	a	day), we built the following marginal models including product/regimen and their interactions with demographic variables in the models:
+$$
+\begin{aligned}
+
+\end{aligned}
+$$
 
 
 # Result
