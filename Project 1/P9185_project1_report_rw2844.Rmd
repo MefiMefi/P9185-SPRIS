@@ -321,28 +321,31 @@ Demographic	data	including	age,	gender	and	race	of	the	recruited	patients were	c
 #### Analysis on Safety of the Treatments
 
 In this trial, patients were assigned to different sequences (see Table \@ref(tab:trt-seq-tab)) of treatment regimens to examine the comparative safety and adherence profiles of the medications for long-term management of MATIK. To investigate the potential for carry-over effects, where the sequence of administered treatments could influence subsequent outcomes, we built the following generalized mixed effects model with logit link to analysis the carry-over effects:
-
 $$\operatorname{logit}\left(\Pr(Y_{ij} = 1 \mid \mathbf{X}_{ij}, b_{i0})\right) = \beta_0 + \beta_1\cdot \text{Period}_{ij} + \beta_2\cdot\mathbf{I}(\text{Sequence 2}_{i}= 1) + \beta_3\cdot\mathbf{I}(\text{Sequence 2}_{i}=2) + b_{0i},$$
 where $Y_{ij}$ is the indicator of occurrence of any adverse event within the period $j$ for patient $i$, $i = 1,\ldots,180$, $j = 1,2,3$. We used this summarized outcome for adverse event because the adverse events are rare events. We also used the same outcome for the subsequent analyses on safety of the treatments. $\text{Period}_{ij}$ is the $j$-th period number of patient $i$. $\mathbf{I}(\text{Sequence 2}_{i}=k)$ are the dummy variables for the sequence of the treatments the patient $i$ received, where the reference level is $\text{Sequence 2}_{i}= 0$, which means the patients received either ABC or BAC, $\text{Sequence 2}_{i}= 1$ means the patients received either CAB or ACB, and $\text{Sequence 2}_{i}= 2$ means the patients received either BCA or CBA. We did this translation since testing the null hypothesis of no carry-over effects, i.e., $H_0: \ \rho_A = \rho_B = \rho_C = 0$, where $\rho_k$ is the carry-over effect of treatment $k$, is the same as testing the following null hypothesis, $H_0: \ \rho_A+ \rho_B = \rho_A+ \rho_C = \rho_B + \rho_C = 0$. Random intercepts are included to account for the clustered data.  
 
 To analyses the treatment effects on the adverse events (after excluding the possibility of the existence of carry-over effects). We used the following generalized mixed effects model with logit link to analysis the treatment effects:
 $$\begin{aligned}
-\text{logit}(\Pr(Y_{ij} = 1 \mid \textbf{X}_{ij}, b_{i0})) = & \ \beta_0  + \beta_1 \cdot\mathbf{I}\left(\text{Treatment}_{ij}={\text{Gel B}}\right)+ \beta_2 \cdot \mathbf{I}\left(\text{Treatment}_{ij}={\text{Gel C}}\right)+ \beta_3 \cdot \text{Period}_{ij} \\
-&+ \beta_4\cdot\text{Age}_i + \beta_5\cdot\mathbf{I}(\text{Gender}_i = \text{female})+ \beta_6\cdot\mathbf{I}(\text{Race}_i = \text{black}) + \beta_7\cdot\mathbf{I}(\text{Race}_i = \text{others}) + b_{i0},
+\text{logit}(\Pr(Y_{ij} = 1 \mid \textbf{X}_{ij}, b_{i0})) = & \ \beta_0  + \beta_1 \cdot\mathbf{I}\left(\text{Treatment}_{ij}={\text{Gel B}}\right)+ \beta_2 \cdot \mathbf{I}\left(\text{Treatment}_{ij}={\text{Gel C}}\right)\\
+&+ \beta_3 \cdot \text{Period}_{ij} 
++ \beta_4\cdot\text{Age}_i \\
+&+ \beta_5\cdot\mathbf{I}(\text{Gender}_i = \text{female})+ \beta_6\cdot\mathbf{I}(\text{Race}_i = \text{black})\\
+&+ \beta_7\cdot\mathbf{I}(\text{Race}_i = \text{others}) + b_{i0},
 \end{aligned}$$
 where $\mathbf{I}(A)$ is the indicator of event $A$, $\mathbf{I}(A) = 0$ is $A$ does not happen, $\mathbf{I}(A) = 1$ is $A$ does happen. Demographic variables are included in the model to reduce variance of the estimates and control for the confounding. Age are centered for better interpretation (average age of this study is `r round(mean(baseline.dat$age),3)`).
 
 #### Analysis on Adherence of Treatments
 
 As in the analysis of adverse effects above, we built the following similar generalized mixed effects model with logit link to analysis the carry-over effects on the treatment adherence:
-
-$$\operatorname{logit}\left(p_{ijk}\mid \mathbf{X}_{ijk},b_{0i}\right) = \beta_0 + \beta_1\cdot \text{Period}_{ij} + \beta_2\cdot\text{Week}_{ijk} + \beta_3 \cdot\mathbf{I}(\text{Sequence 2}_{i}= 1) + \beta_4\cdot\mathbf{I}(\text{Sequence 2}_{i}=2) + b_{0i},$$
+$$\begin{aligned}\operatorname{logit}\left(p_{ijk}\mid \mathbf{X}_{ijk},b_{0i}\right) &= \beta_0 + \beta_1\cdot \text{Period}_{ij} + \beta_2\cdot\text{Week}_{ijk} \\ &+ \beta_3 \cdot\mathbf{I}(\text{Sequence 2}_{i}= 1) + \beta_4\cdot\mathbf{I}(\text{Sequence 2}_{i}=2) + b_{0i},\end{aligned}$$
 where $p_{ijk}$ is the probability of the $i$-th patient adhered to the treatment in week $k$ during period $j$. We assumed the observed outcome $Y_{ijk}$, which is the number of the number of days (out of 7 days) that patients are able to take pills or apply gels as prescribed, follows a $\operatorname{Binomial}(7,p_{ijk})$ distribution. We also used the same outcome for the subsequent analyses on adherence of the treatments. Random intercepts are included to account for the clustered data.  
 
 To analyses the treatment effects on the treatment adherence (after excluding the possibility of the existence of carry-over effects). We used the following generalized mixed effects model with logit link to analysis the treatment effects:
 $$\begin{aligned}
-\text{logit}(p_{ijk}\mid \mathbf{X}_{ijk},b_{0i}) = & \ \beta_0  + \beta_1 \cdot\mathbf{I}\left(\text{Treatment}_{ij}={\text{Gel B}}\right)+ \beta_2 \cdot \mathbf{I}\left(\text{Treatment}_{ij}={\text{Gel C}}\right)+ \beta_3 \cdot \text{Period}_{ij} + \beta_4\cdot\text{Week}_{ijk} \\
-&+ \beta_5\cdot\text{Age}_i + \beta_6\cdot\mathbf{I}(\text{Gender}_i = \text{female})+ \beta_7\cdot\mathbf{I}(\text{Race}_i = \text{black}) + \beta_8\cdot\mathbf{I}(\text{Race}_i = \text{others}) + b_{i0}.
+\text{logit}(p_{ijk}\mid \mathbf{X}_{ijk},b_{0i}) = & \ \beta_0  + \beta_1 \cdot\mathbf{I}\left(\text{Treatment}_{ij}={\text{Gel B}}\right)+ \beta_2 \cdot \mathbf{I}\left(\text{Treatment}_{ij}={\text{Gel C}}\right)\\
+& +\beta_3 \cdot \text{Period}_{ij} + \beta_4\cdot\text{Week}_{ijk} \\
+&+ \beta_5\cdot\text{Age}_i + \beta_6\cdot\mathbf{I}(\text{Gender}_i = \text{female})+ \beta_7\cdot\mathbf{I}(\text{Race}_i = \text{black}) \\
+&+ \beta_8\cdot\mathbf{I}(\text{Race}_i = \text{others}) + b_{i0}.
 \end{aligned}$$
 
 
@@ -351,38 +354,107 @@ $$\begin{aligned}
 #### Correlation of	PK with	Adherence	Measures and the Occurrence	of Adverse Events
 
 To investigate the association between safety, adherence and PK outcomes, we first built the following models to exam the existence of carry-over effect, as we did in the primary analyses:
-$$\begin{aligned}\Delta\text{Skin Viral Load}_{ij} &=\beta_0 + \beta_1\cdot \text{Period}_{ij} + \beta_2\cdot\mathbf{I}(\text{Sequence 2}_{i}= 1) + \beta_3\cdot\mathbf{I}(\text{Sequence 2}_{i}=2) + b_{0i},\\
-\Delta\text{Blood Viral Load}_{ij} &=\gamma_0 + \gamma_1\cdot \text{Period}_{ij} + \gamma_3\cdot\mathbf{I}(\text{Sequence 2}_{i}= 1) + \gamma_3\cdot\mathbf{I}(\text{Sequence 2}_{i}=2) + b_{0i}.
+$$\begin{aligned}\Delta\text{Skin Viral Load}_{ij} &=\beta_0 + \beta_1\cdot \text{Period}_{ij} + \beta_2\cdot\mathbf{I}(\text{Sequence 2}_{i}= 1) \\&+ \beta_3\cdot\mathbf{I}(\text{Sequence 2}_{i}=2) + b_{0i},
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+\Delta\text{Blood Viral Load}_{ij} &=\gamma_0 + \gamma_1\cdot \text{Period}_{ij} + \gamma_3\cdot\mathbf{I}(\text{Sequence 2}_{i}= 1)\\ & + \gamma_3\cdot\mathbf{I}(\text{Sequence 2}_{i}=2) + b_{0i}.
 \end{aligned}
 $$
 
 Here $\Delta\text{Skin Viral Load}_{ij}$ and $\Delta\text{Blood Viral Load}_{ij}$ are the change in skin/ blood viral load for patient $i$, calculated by subtracting after period (treatment) viral load from the viral load before each period (baseline viral load for $j = 1$, viral loads after wash out period for $j = 2,3$), respectively.
 
 To analyses the effects of safety outcomes and adherence outcomes on PK outcomes, together with the treatment effects on systemic	and	local viral loads, the following linear mixed effects models are built:
-$$\begin{aligned}\Delta\text{Skin Viral Load}_{ij} &= \ \beta_0  + \beta_1 \cdot\mathbf{I}\left(\text{Treatment}_{ij}={\text{Gel B}}\right)+ \beta_2 \cdot \mathbf{I}\left(\text{Treatment}_{ij}={\text{Gel C}}\right)+ \beta_3 \cdot \text{Period}_{ij} \\
-&+ \beta_4\cdot\mathbf{I}\left(\text{Number of adverse event}_{ij}\ge1\right)  + \beta_4\cdot\text{Number of days of adherence}_{ij}\\
-&+\beta_4\cdot\text{Age}_i + \beta_5\cdot\mathbf{I}(\text{Gender}_i = \text{female})+ \beta_6\cdot\mathbf{I}(\text{Race}_i = \text{black}) + \beta_7\cdot\mathbf{I}(\text{Race}_i = \text{others}) + b_{i0},
+$$\begin{aligned}\mathrm{E}[\Delta\text{Skin Viral Load}_{ij}\mid \mathbf{X}_{ij}, b_{0i}] &= \ \beta_0  + \beta_1 \cdot\mathbf{I}\left(\text{Treatment}_{ij}={\text{Gel B}}\right)\\
+&+ \beta_2 \cdot \mathbf{I}\left(\text{Treatment}_{ij}={\text{Gel C}}\right) \\
+& + \beta_3 \cdot \text{Period}_{ij} + \beta_4\cdot\mathbf{I}\left(\text{Number of adverse event}_{ij}\ge1\right)  \\ &+ \beta_5\cdot\text{Number of days of adherence}_{ij}\\
+&+\beta_6\cdot\text{Age}_i + \beta_7\cdot\mathbf{I}(\text{Gender}_i = \text{female})\\
+&+ \beta_8\cdot\mathbf{I}(\text{Race}_i = \text{black}) + \beta_9\cdot\mathbf{I}(\text{Race}_i = \text{others}) + b_{i0},
 \end{aligned}
 $$
 and
-$$\begin{aligned}\Delta\text{Blood Viral Load}_{ij} &= \ \gamma_0  + \gamma_1 \cdot\mathbf{I}\left(\text{Treatment}_{ij}={\text{Gel B}}\right)+ \gamma_2 \cdot \mathbf{I}\left(\text{Treatment}_{ij}={\text{Gel C}}\right)+ \gamma_3 \cdot \text{Period}_{ij} \\
-&+ \gamma_4\cdot\mathbf{I}\left(\text{Number of adverse event}_{ij}\ge1\right)  + \gamma_4\cdot\text{Number of days of adherence}_{ij}\\
-&+\gamma_4\cdot\text{Age}_i + \gamma_5\cdot\mathbf{I}(\text{Gender}_i = \text{female})+ \gamma_6\cdot\mathbf{I}(\text{Race}_i = \text{black}) + \gamma_7\cdot\mathbf{I}(\text{Race}_i = \text{others}) + b_{i0},
+$$\begin{aligned}\mathrm{E}[\Delta\text{Blood Viral Load}_{ij}\mid \mathbf{X}_{ij}, b_{0i}] &= \ \gamma_0  + \gamma_1 \cdot\mathbf{I}\left(\text{Treatment}_{ij}={\text{Gel B}}\right)\\
+&+ \gamma_2 \cdot \mathbf{I}\left(\text{Treatment}_{ij}={\text{Gel C}}\right) \\
+& + \gamma_3 \cdot \text{Period}_{ij} + \gamma_4\cdot\mathbf{I}\left(\text{Number of adverse event}_{ij}\ge1\right)  \\ &+ \gamma_5\cdot\text{Number of days of adherence}_{ij}\\
+&+\gamma_6\cdot\text{Age}_i + \gamma_7\cdot\mathbf{I}(\text{Gender}_i = \text{female})\\
+&+ \gamma_8\cdot\mathbf{I}(\text{Race}_i = \text{black}) + \gamma_9\cdot\mathbf{I}(\text{Race}_i = \text{others}) + b_{i0},
 \end{aligned}
 $$
 where the number of days of adherence in the period is centered at the mean adherence day of that period.
 
 #### Identify Demographic Factors associated with Product Adherence
 
-In order to identify demographic factors associated	with product adherence and	whether	they	differ by product used	(Pill	or Gel) or	regimen	(three times	a	day	or once	a	day), we built the following marginal models including product/regimen and their interactions with demographic variables in the models:
+In order to identify demographic factors associated	with product adherence and whether	they	differ by product used	(Pill	or Gel) or	regimen	(three times	a	day	or once	a	day), we built the following marginal models including product/regimen and their interactions with demographic variables in the models:
 $$
 \begin{aligned}
-
+\operatorname{logit}\left(p_{ijk}\mid \mathbf{X}_{ijk}\right) & = \beta_0 + \beta_1\cdot \text{Period}_{ij} + \beta_2\cdot\text{Week}_{ijk}\\
+&+ \beta_3\cdot\text{Age}_i + \beta_4\cdot \mathbf{I}(\text{Gender}_i =\text{female} ) + \beta_5\cdot\mathbf{I}(\text{Race}_i = \text{black}) \\
+& + \beta_6\cdot\mathbf{I}(\text{Race}_i = \text{others})\\
+& + \beta_7\cdot \mathbf{I}(\text{Product Type}_{ij} = \text{Gel}) + \beta_8\cdot \text{Age}_i\cdot \mathbf{I}(\text{Product Type}_{ij} = \text{Gel}) \\
+& + \beta_9\cdot \mathbf{I}(\text{Gender}_i =\text{female} )\cdot \mathbf{I}(\text{Product Type}_{ij} = \text{Gel})\\
+& + \beta_{10}\cdot\mathbf{I}(\text{Race}_i = \text{black})\cdot \mathbf{I}(\text{Product Type}_{ij} = \text{Gel})\\
+&+ \beta_{11}\cdot\mathbf{I}(\text{Race}_i = \text{others})\cdot \mathbf{I}(\text{Product Type}_{ij} = \text{Gel}),
 \end{aligned}
 $$
+and
 
+$$
+\begin{aligned}
+\operatorname{logit}\left(p_{ijk}\mid \mathbf{X}_{ijk}\right) & = \gamma_0 + \gamma_1\cdot \text{Period}_{ij} + \gamma_2\cdot\text{Week}_{ijk}\\
+&+ \gamma_3\cdot\text{Age}_i + \gamma_4\cdot \mathbf{I}(\text{Gender}_i =\text{female} ) + \gamma_5\cdot\mathbf{I}(\text{Race}_i = \text{black}) \\
+& + \gamma_6\cdot\mathbf{I}(\text{Race}_i = \text{others})\\
+& + \gamma_7\cdot \mathbf{I}(\text{Regimen}_{ij} = \text{Three times a day}) \\
+& +\gamma_8\cdot \text{Age}_i\cdot \mathbf{I}(\text{Regimen}_{ij} = \text{Three times a day}) \\
+& + \gamma_9\cdot \mathbf{I}(\text{Gender}_i =\text{female} )\cdot \mathbf{I}(\text{Regimen}_{ij} = \text{Three times a day})\\
+& + \gamma_{10}\cdot\mathbf{I}(\text{Race}_i = \text{black})\cdot \mathbf{I}(\text{Regimen}_{ij} = \text{Three times a day})\\
+&+ \gamma_{11}\cdot\mathbf{I}(\text{Race}_i = \text{others})\cdot \mathbf{I}(\text{Regimen}_{ij} = \text{Three times a day}),
+\end{aligned}
+$$
+where age are centered in both models above.
 
 # Result
+
+## Baseline Characteristics of the Study Population
+
+Table \@ref(tab:table-1) shows the distributions of the baseline covariates, including demographic variables and baseline viral loads. The similarities in these baseline measures suggest that the randomization process was successful in distributing known potential confounders evenly across groups. Such balance is indicative of the effectiveness of the randomization procedure, enhancing the internal validity of the study by reducing the likelihood that observed differences in outcomes can be attributed to pre-existing differences among treatment groups. This equitable distribution of baseline characteristics establishes a solid foundation for subsequent analyses of the treatments.
+
+```{r table-1}
+baseline.demo <-
+  left_join(Adhere.demo, baseline.dat %>% select(ptid, bviral0, sviral0)) %>% 
+  left_join(
+    .,
+    endpoints.period %>% select(ptid, sequence) %>% distinct()
+  )
+library(table1)
+baseline.demo$gender <- factor(baseline.demo$gender, levels = c("male", "female"), labels = c("Male", "Female"))
+baseline.demo$race <- factor(baseline.demo$race, levels = c("white", "black", "others"), labels = c("White", "Black", "Others"))
+
+
+label(baseline.demo$gender) = "Gender"
+label(baseline.demo$race) = "Race"
+label(baseline.demo$age) = "Age"
+label(baseline.demo$bviral0) = "Baseline blood viral load"
+label(baseline.demo$sviral0) = "Baseline skin viral load"
+label(baseline.demo$sequence) = "Treatment sequence"
+library(gt)
+demo.tab <-
+  table1(~ age + gender + race + bviral0 + sviral0 | sequence,
+    data=baseline.demo, caption="Descriptive statistics of baseline characteristics of the 180 subjects by treatment sequences.") %>% t1kable(booktabs = TRUE) %>%  kable_styling(latex_options = c("hold_position", "scale_down"))
+demo.tab
+```
+
+
+## Longitudinal Outcomes of the Patients
+
+## Carry-over Effects
+
+## Safety of the Treatments
+
+## Adherence of the Treatments
+
+## 
 
 # Discussion
 

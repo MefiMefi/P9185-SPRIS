@@ -359,13 +359,19 @@ No significant crossover effect found for both type of measurements.
 #### Modelling
 
 ```{r model_PK}
-
+endpoints.PK <- 
+  endpoints.PK %>% 
+  mutate(age = age - mean(age)) %>% 
+  group_by(period) %>% 
+  mutate(Adhere_mean = mean(Adhere_sum), .keep = "all") %>% 
+  ungroup() %>% 
+  mutate(Adhere_sum_centered = Adhere_sum - Adhere_mean)
 # Combinging two measures into one model
 model.PK.bviral <- lmer(dvalue ~ drug + period + Adhere_sum_centered + AE_ind + age + gender + race + (1|ptid) , data = endpoints.PK %>% filter(measure == "Blood"))
 summary(model.PK.bviral)
 # refactor (A as reference)
 
-model.PK.sviral <- lmer(dvalue ~ drug + period + Adhere_sum_centered + age + gender + race + (1|ptid) , data = endpoints.PK %>% filter(measure == "Skin"))
+model.PK.sviral <- lmer(dvalue ~ drug + period + Adhere_sum_centered + AE_ind + age + gender + race + (1|ptid) , data = endpoints.PK %>% filter(measure == "Skin"))
 summary(model.PK.sviral)
 
 tbl.PK.bviral <- 
@@ -374,7 +380,7 @@ tbl.PK.bviral <-
     estimate_fun = function(x) style_number(x, digits = 3), 
     exponentiate = F,
     label = list(
-      Adhere_sum ~ "Days of adherece (within a period)",
+      Adhere_sum_centered ~ "Days of adherece (within a period, centered)",
       drug ~ "Treatment",
       period ~ "Period",
       age ~ "Age",
@@ -393,7 +399,7 @@ tbl.PK.sviral <-
     estimate_fun = function(x) style_number(x, digits = 3), 
     exponentiate = F,
     label = list(
-      Adhere_sum ~ "Days of adherece (within a period)",
+      Adhere_sum_centered ~ "Days of adherece (within a period, centered)",
       drug ~ "Treatment",
       period ~ "Period",
       age ~ "Age",
@@ -445,11 +451,11 @@ endpoints.Adhere.regimen <-
            drug == "Gel C" ~ "once"
          ), levels = c("once", "three times")))
 
-model.Adhere.product.1 <- glmtoolbox::glmgee(cbind(Adhere, nonAdhere) ~ period + age*product + gender*product + race*product, data = endpoints.Adhere.regimen, family = binomial, id = ptid, corstr = "Independence")
+model.Adhere.product.1 <- glmtoolbox::glmgee(cbind(Adhere, nonAdhere) ~ period + week + age*product + gender*product + race*product, data = endpoints.Adhere.regimen, family = binomial, id = ptid, corstr = "Independence")
 
-model.Adhere.product.2 <- glmtoolbox::glmgee(cbind(Adhere, nonAdhere) ~ period + age*product + gender*product + race*product, data = endpoints.Adhere.regimen, family = binomial, id = ptid, corstr = "AR-M-dependent(1)")
+model.Adhere.product.2 <- glmtoolbox::glmgee(cbind(Adhere, nonAdhere) ~ period + week + age*product + gender*product + race*product, data = endpoints.Adhere.regimen, family = binomial, id = ptid, corstr = "AR-M-dependent(1)")
 
-model.Adhere.product.3 <- glmtoolbox::glmgee(cbind(Adhere, nonAdhere) ~ period + age*product + gender*product + race*product, data = endpoints.Adhere.regimen, family = binomial, id = ptid, corstr = "Exchangeable")
+model.Adhere.product.3 <- glmtoolbox::glmgee(cbind(Adhere, nonAdhere) ~ period + week + age*product + gender*product + race*product, data = endpoints.Adhere.regimen, family = binomial, id = ptid, corstr = "Exchangeable")
 
 AIC(model.Adhere.product.1)
 AIC(model.Adhere.product.2)
@@ -459,15 +465,15 @@ summary(model.Adhere.product.1)
 summary(model.Adhere.product.2)
 summary(model.Adhere.product.3)
 
-model.Adhere.freq.1 <- glmtoolbox::glmgee(cbind(Adhere, nonAdhere) ~ period + age*freq + gender*freq + race*freq, data = endpoints.Adhere.regimen, family = binomial, id = ptid, corstr = "Independence")
-model.Adhere.freq.2 <- glmtoolbox::glmgee(cbind(Adhere, nonAdhere) ~ period + age*freq + gender*freq + race*freq, data = endpoints.Adhere.regimen, family = binomial, id = ptid, corstr = "AR-M-dependent(1)")
-model.Adhere.freq.3 <- glmtoolbox::glmgee(cbind(Adhere, nonAdhere) ~ period + age*freq + gender*freq + race*freq, data = endpoints.Adhere.regimen, family = binomial, id = ptid, corstr = "Exchangeable")
+model.Adhere.freq.1 <- glmtoolbox::glmgee(cbind(Adhere, nonAdhere) ~ period + week + age*freq + gender*freq + race*freq, data = endpoints.Adhere.regimen, family = binomial, id = ptid, corstr = "Independence")
+model.Adhere.freq.2 <- glmtoolbox::glmgee(cbind(Adhere, nonAdhere) ~ period + week + age*freq + gender*freq + race*freq, data = endpoints.Adhere.regimen, family = binomial, id = ptid, corstr = "AR-M-dependent(1)")
+model.Adhere.freq.3 <- glmtoolbox::glmgee(cbind(Adhere, nonAdhere) ~ period + week + age*freq + gender*freq + race*freq, data = endpoints.Adhere.regimen, family = binomial, id = ptid, corstr = "Exchangeable")
 
 AIC(model.Adhere.freq.1)
 AIC(model.Adhere.freq.2)
 AIC(model.Adhere.freq.3)
 
-summary(model.Adhere.product.1)
+summary(model.Adhere.freq.1)
 summary(model.Adhere.product.2)
 summary(model.Adhere.product.3)
 ```
