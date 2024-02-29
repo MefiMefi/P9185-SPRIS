@@ -168,12 +168,12 @@ endpoints.PK <-
   baseline.dat %>% 
   select(ptid, bviral0:sviral6) %>% 
   mutate(
-    dbvial1 = -bviral1 - bviral0,
-    dsvial1 = -sviral1 - sviral0,
-    dbvial2 = -bviral3 - bviral2,
-    dsvial2 = -sviral3 - sviral2,
-    dbvial3 = -bviral5 - bviral4,
-    dsvial3 = -sviral5 - sviral4
+    dbvial1 = bviral1 - bviral0,
+    dsvial1 = sviral1 - sviral0,
+    dbvial2 = bviral3 - bviral2,
+    dsvial2 = sviral3 - sviral2,
+    dbvial3 = bviral5 - bviral4,
+    dsvial3 = sviral5 - sviral4
   ) %>% 
   pivot_longer(
     cols = starts_with("d"),
