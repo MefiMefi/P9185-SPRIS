@@ -17,224 +17,9 @@ header-includes:
   - \usepackage{appendix}
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, message = F, warning = F)
-options(knitr.kable.NA = '')
-library(tidyverse)
-library(lme4)
-library(nlme)
-library(lattice)
-library(gtsummary)
-library(DHARMa)
-library(knitr)
-library(kableExtra)
-library(webshot)
-
-write_matex <- function(x) {
-  begin <- "$$\\begin{bmatrix}"
-  end <- "\\end{bmatrix}$$"
-  X <-
-    apply(x, 1, function(x) {
-      paste(
-        paste(x, collapse = "&"),
-        "\\\\"
-      )
-    })
-  writeLines(c(begin, X, end))
-}
-theme_set(
-  theme_bw()+
-  theme(
-    plot.title = element_text(size = 16, hjust = 0.5),
-    axis.title.x = element_text(size = 12),
-    axis.title.y = element_text(size = 12),
-    axis.text = element_text(size = 10),
-    axis.line = element_line(color = "black", size = 0.5),
-  )
-)
+```{r load-analysis, include = F}
+source(knitr::purl("P9185_project1.Rmd", quiet=TRUE))
 ```
-
-```{r load_data}
-baseline.dat <- read.csv("baseline.csv")
-endpoints.dat <- read.csv("endpoints.csv")
-```
-
-```{r datacleaning_basic}
-endpoints.AE <-
-  endpoints.dat %>% 
-  select(ptid,  AE_pillA_week1:AE_gelC_week4) %>% 
-  pivot_longer(
-    cols = starts_with("AE_"),
-    names_to = c("drug", "week"),
-    names_pattern = "AE_(.*)_(week\\d+)",
-    values_to = "AE"
-  ) %>%
-  mutate(drug = case_when(
-    str_detect(drug, "pillA") ~ "Pill A",
-    str_detect(drug, "gelB") ~ "Gel B",
-    str_detect(drug, "gelC") ~ "Gel C"
-  ),
-  week = parse_number(week))
-
-endpoints.Adhere <-
-  endpoints.dat %>% 
-  select(ptid, Adhere_pillA_week1:Adhere_gelC_week4) %>% 
-  pivot_longer(
-    cols = starts_with("Adhere_"),
-    names_to = c("drug", "week"),
-    names_pattern = "Adhere_(.*)_(week\\d+)",
-    values_to = "Adhere"
-  ) %>%
-  mutate(drug = case_when(
-    str_detect(drug, "pillA") ~ "Pill A",
-    str_detect(drug, "gelB") ~ "Gel B",
-    str_detect(drug, "gelC") ~ "Gel C"
-  ),
-  week = parse_number(week)) %>% 
-  mutate(drug = factor(drug, levels = c("Pill A", "Gel B", "Gel C")))
-
-endpoints.period <- 
-  endpoints.dat %>% 
-  select(ptid, period1:period3) %>% 
-  mutate(sequence = case_when(
-    period1 == "Pill A" & period2 == "Gel B" & period3 == "Gel C" ~ "ABC",
-    period1 == "Pill A" & period2 == "Gel C" & period3 == "Gel B" ~ "ACB",
-    period1 == "Gel B" & period2 == "Gel C" & period3 == "Pill A" ~ "BCA",
-    period1 == "Gel B" & period2 == "Pill A" & period3 == "Gel C" ~ "BAC",
-    period1 == "Gel C" & period2 == "Pill A" & period3 == "Gel B" ~ "CAB",
-    period1 == "Gel C" & period2 == "Gel B" & period3 == "Pill A" ~ "CBA",
-    TRUE ~ "Other" # This is the default case
-  )) %>% 
-  mutate(
-    seq1 = case_when(
-    sequence == "ABC" ~ 1,
-    sequence == "CAB" ~ 2,
-    sequence == "BCA" ~ 3,
-    sequence == "BAC" ~ 4,
-    sequence == "ACB" ~ 5,
-    sequence == "CBA" ~ 6,
-  ),
-    seq2 = case_when(
-      sequence == "ABC" | sequence == "BAC" ~ 0,
-      sequence == "CAB" | sequence == "ACB" ~ 1,
-      sequence == "BCA" | sequence == "CBA" ~ 2
-    )) %>% 
-  pivot_longer(
-    cols = starts_with("period"),
-    names_prefix = "period",
-    names_to = "period",
-    values_to = "drug"
-  ) %>% 
-  mutate(period = as.numeric(period)) %>% 
-  mutate(drug = factor(drug, levels = c("Pill A", "Gel B", "Gel C"))) %>% 
-  mutate(seq2 = factor(seq2, levels = c(0,1,2), labels = c("AB", "AC", "BC")))
-
-endpoints.lag <- 
-  endpoints.period %>% 
-  select(ptid, period, drug) %>% 
-  group_by(ptid) %>% 
-  mutate(drug_lag = lag(as.character(drug))) %>% 
-  ungroup() %>% 
-  replace_na(list(drug_lag = "None")) %>% 
-  mutate(
-    A_lag = ifelse(drug_lag == "Pill A", 1, 0),
-    B_lag = ifelse(drug_lag == "Gel B", 1, 0),
-    C_lag = ifelse(drug_lag == "Gel C", 1, 0)
-  )%>% 
-  mutate(drug = factor(drug, levels = c("Pill A", "Gel B", "Gel C")))
-
-endpoints.period <- left_join(endpoints.period, endpoints.lag)
-
-endpoints.AE <- left_join(endpoints.AE, endpoints.period)
-
-endpoints.Adhere <- left_join(endpoints.Adhere, endpoints.period)
-```
-
-```{r datacleaning_model}
-endpoints.AE.weeksum <- 
-  endpoints.AE %>% 
-  select(-week) %>% 
-  group_by(ptid,drug,period) %>% 
-  mutate(AE_sum  = sum(AE)) %>% 
-  ungroup() %>% 
-  mutate(AE_ind = as.factor(ifelse(AE_sum > 0, 1, 0))) %>% 
-  select(-AE) %>% 
-  distinct() %>% 
-  mutate(drug = factor(drug, levels = c("Pill A", "Gel B", "Gel C")))
-
-endpoints.Adhere <-
-  endpoints.Adhere %>% 
-  mutate(total_week = period*week,
-         nonAdhere = 7-Adhere)
-```
-
-```{r datacleaning_PK}
-# 0- baseline; 1- 1st treatment; 2- 1st wash out; 3- 2nd treatment;
-# 4- 2nd wash out; 5- third treatment; 6- third wash out
-endpoints.PK <-
-  baseline.dat %>% 
-  select(ptid, bviral0:sviral6) %>% 
-  mutate(
-    dbvial1 = -bviral1 - bviral0,
-    dsvial1 = -sviral1 - sviral0,
-    dbvial2 = -bviral3 - bviral2,
-    dsvial2 = -sviral3 - sviral2,
-    dbvial3 = -bviral5 - bviral4,
-    dsvial3 = -sviral5 - sviral4
-  ) %>% 
-  pivot_longer(
-    cols = starts_with("d"),
-    names_to = c("measure", "period"),
-    names_pattern = "d(.*vial)(\\d+)",
-    values_to = "dvalue"
-  ) %>% 
-  select(ptid, measure, period, dvalue) %>% 
-  mutate(period = as.numeric(period),
-         dvalue = -dvalue) 
-  
-
-```
-
-
-```{r datacleaning_primary}
-endpoints.Adhere.sum <-
-  endpoints.Adhere %>% 
-  select(ptid, period, week, Adhere) %>% 
-  group_by(ptid, period) %>% 
-  summarize(Adhere_sum  = sum(Adhere)) %>% 
-  mutate(Adhere_rate = Adhere_sum/28)
-
-endpoints.PK <- left_join(endpoints.PK, endpoints.Adhere.sum)
-endpoints.PK <- 
-  left_join(endpoints.PK, endpoints.AE.weeksum) %>% 
-  mutate(drug = factor(drug, levels = c("Pill A", "Gel B", "Gel C"))) %>% 
-  mutate(measure = factor(measure, labels = c("Skin", "Blood"),levels = c("svial", "bvial"))) %>% 
-  mutate(AE_ind = factor(ifelse(AE_ind == 1,"Yes", "No")))
-
-#endpoints.PK.bvial <- endpoints.PK %>% filter(measure == "bvial")
-#endpoints.PK.svial <- endpoints.PK %>% filter(measure == "svial")
-```
-
-
-```{r datacleaning_secondary}
-Adhere.demo <-
-  baseline.dat %>% 
-  select(ptid, age, gender, race) %>% 
-  mutate(
-    gender = factor(gender, labels = c("male", "female"), levels = c(0,1)),
-    race = factor(race, levels = c("white", "black", "others"))
-  )
-
-endpoints.Adhere.total <- 
-  endpoints.Adhere.sum %>% 
-  select(ptid, Adhere_sum) %>% 
-  group_by(ptid) %>% 
-  summarize(Adhere_total = sum(Adhere_sum))
-
-Adhere.demo <- left_join(Adhere.demo, endpoints.Adhere.total) %>% 
-  mutate(non_Adhere_total = 84 - Adhere_total)
-```
-
 
 # Introduction
 
@@ -245,7 +30,6 @@ Several	scientific	labs	and drug	companies	are	actively	engaged	in	developing dr
 Due	to	urgent	need,	researchers/clinicians	decide	to	conduct	a	phase	II	trial	to evaluate	the	safety	and	adherence	of	all	the	three	medications	simultaneously.	
 
 Based	on	the	information	collected	from	the	Phase	I	trials,	and	earlier	cell	line	and	animal	studies.	The	following	doses shown in Table \@ref(tab:dose-tab)	will	be	used	in	the	trial.	
-
 
 ```{r dose-tab}
 # Create a data frame with the table information
@@ -261,7 +45,6 @@ kable(table_trt, "latex", booktabs = TRUE, caption = "Recommended doses/administ
   kable_styling(position = "center", latex_options = "hold_position") %>%
   column_spec(1, bold = TRUE)
 ```
-
 
 # Method
 
@@ -288,7 +71,6 @@ study_regimen <- data.frame(
 kable(study_regimen, "latex", booktabs = TRUE, col.names = c("Sequence", "Period 1", "period 2", "Period 3"), caption = "Study Regimen") %>%
   kable_styling(latex_options = c("hold_position"), full_width = FALSE, position = "center")
 ```
-
 
 ## Study Objectives	and	Endpoints
 
@@ -351,7 +133,7 @@ $$\begin{aligned}
 
 ### Secondary Analysis
 
-#### Correlation of	PK with	Adherence	Measures and the Occurrence	of Adverse Events
+#### Correlation of	Pharmacokinetics with	Adherence	Measures and the Occurrence	of Adverse Events
 
 To investigate the association between safety, adherence and PK outcomes, we first built the following models to exam the existence of carry-over effect, as we did in the primary analyses:
 $$\begin{aligned}\Delta\text{Skin Viral Load}_{ij} &=\beta_0 + \beta_1\cdot \text{Period}_{ij} + \beta_2\cdot\mathbf{I}(\text{Sequence 2}_{i}= 1) \\&+ \beta_3\cdot\mathbf{I}(\text{Sequence 2}_{i}=2) + b_{0i},
@@ -445,16 +227,333 @@ demo.tab <-
 demo.tab
 ```
 
-
 ## Longitudinal Outcomes of the Patients
+
+Figure \@ref(fig:long-plot) shows the change of primary outcomes, the safety outcome and the adherence, across the 4 weeks in one treatment period. Since adverse events are rare, we summarized the number of patients who ever experienced adverse events during a week. From the upper panel we can see that there is a increasing trend of experiencing adverse event towards the end of the period for all treatments. From the lower panel, we see a the lines are trend downwards, which means that the odds of adherence are decreasing over time.
+
+```{r long-plot, fig.cap="Change of primary outcomes across week in a treatment period. Upper panel: Total number of subject who had experienced adverse events, stratified by treatments. Lower panel: Change of logarithm of odds of adherence, stratified by treatments, the blue line is the population trend fitted by linear model."}
+library(latex2exp)
+library(ggpubr)
+
+plot.ae <- 
+endpoints.AE %>% 
+  filter(AE ==1) %>%
+  group_by(drug, week) %>%
+  ggplot(aes(x=week))+
+  geom_bar()+
+  facet_grid(.~factor(drug, levels=c('Pill A','Gel B','Gel C')))+
+  theme_bw()+
+  ylab("Number of Subjects")+
+  xlab("Week Number in a Treatment Period")
+
+#plot.ae
+
+plot.adhere <- 
+endpoints.Adhere %>% 
+  # each line is adherence of a drug taken by a subject
+  ggplot(aes(x = week, y = log(Adhere/7/ (1-Adhere/7)))) +
+  geom_line(alpha = 0.2,aes(x = week, y = log(Adhere/7/ (1-Adhere/7)),group = interaction(ptid, drug))) + 
+  geom_point(alpha = 0.1, size = 0.8,aes(x = week, y = log(Adhere/7/ (1-Adhere/7)),group = interaction(ptid, drug)))+
+  geom_smooth(method = "lm")+
+  facet_grid(.~drug)+
+  theme_bw() +
+  ylab(TeX("$\\log\\left(\\frac{p_{ijk}}{1-p_{ijk}}\\right)$"))
+
+#plot.adhere
+
+plot.PK <-
+endpoints.PK %>%
+  ggplot(aes(y=dvalue, x=period))+
+  geom_smooth(method = "lm", se = FALSE, show.legend = FALSE) +
+  geom_line(alpha = 0.2, aes(group = ptid)) + 
+  geom_point(alpha = 0.1, size = 0.8) +
+  facet_grid(.~measure)+
+  xlab("Period")+
+  ylab("Viral Load Difference")+
+  theme_bw()
+
+#plot.PK
+
+ggarrange(plot.ae, plot.adhere, 
+          #labels = c("(a)", "(b)"),
+          ncol = 1, nrow = 2)
+```
+
+To identify potential demographic factors that affect the treatments adherence, and their interaction with product type and regimen, figure \@ref(fig:plot-adhere-demo) shows the adherence rate versus age stratified by product type and regimen, as well as gender and race. Overall, we found a higher adherence rate among patients who were using pill than who were using gel. We also found that patients who were prescribed a lower frequency of using pill/gel daily has a higher adherence rate. We didn't observe a clearly relationship between gender/race and adherence rate, however, we did found a increase in adherence rate as age increases.
+
+```{r plot-adhere-demo, fig.cap="Adherence rate of a treatment period across different age, stratified by product type/regimen and demographic factors, with loess smoothing curve."}
+plot.adhere.demo <- 
+endpoints.PK %>%
+  mutate(product_type = if_else(drug=="Pill A", "Drug", "Gel"),
+         regimen = if_else(drug== "Gel B", "3 times/day", "1 time/day"),
+         product_dosage = case_when(
+           drug == "Pill A" ~ "Drug, 1 time/day",
+           drug == "Gel B" ~ "Gel, 3 times/day",
+           drug == "Gel C" ~"Gel, 1 time/day"
+         )) %>%
+  ggplot(aes(y = Adhere_rate, x = age))+
+  #geom_boxplot()+
+  geom_point()+
+  geom_hline(yintercept = 1, linetype = 2, color = "grey")+
+  geom_smooth(color="blue", method="loess")+
+  facet_grid(gender + race~regimen + product_type)+
+  theme_bw()+
+  ylab("Adherence Rate of a Treatment Period")+
+  xlab("Age") + 
+  labs(caption = "(Age is centered)")
+
+library(patchwork)
+plot.adhere.demo
+```
+
+For the secondary endpoint, figure \@ref(fig:pk-plots) shows the overall viral loads change of different treatment groups. We found that Gel C achieved a higher viral loads reduction in both skin viral load and blood viral load compared to Gel B and Gel C. We also found that the occurence of adverse event is associated with a higher reduction in viral loads, while higher adherence is associated with a lower reduction in viral loads.
+
+```{r pk-plots,fig.cap="Viral loads change of different treatment groups. Upper panel: stratified by measurement type and occurence of adverse event. Lower panel: change in viral loads versus the number of adherence days, stratified by treatments and measurement types.", fig.width=6, fig.height=8, message=F}
+plot.pk.ae <-
+ endpoints.PK %>%
+  ggplot(aes(y=dvalue, x=drug))+
+  geom_boxplot()+
+  facet_grid(AE_ind ~measure)+
+  theme_bw()+
+  ylab("Viral Load Difference")+
+  xlab("Treatments")
+
+plot.pk.adhere <-
+ endpoints.PK %>%
+  ggplot(aes(y=dvalue, x=Adhere_sum))+
+  #geom_boxplot(aes(group = Adhere_sum))+
+  geom_point(size=0.8)+
+  geom_smooth(method = "lm", se = FALSE, show.legend = FALSE) +
+  facet_grid(drug~measure)+
+  xlab("Number of Adherence Days in a Treatment Period")+
+  ylab("Viral Load Difference")+
+  theme_bw()
+  
+ggarrange(plot.pk.ae, plot.pk.adhere,
+          ncol = 1, nrow =2)
+```
 
 ## Carry-over Effects
 
+Table \@ref(tab:carryover-ae-tab)-\@ref(tab:carryover-pk-sviral-tab) shows the coefficients estimates of the fixed effects of the model analyzing carry-over effects of the treatments on the occurrence of adverse events, the adherence and the PK (blood and skin), respectively. We did not find any significant carry-over effects of treatments on both outcomes. The p-value of the test against the null hypotheses of no carry-over effects (with degree of freedoms equal 2) on safety outcome, adherence and PK (blood and skin) are $0.761$, $0.891$, $0.990$, and $0.774$, respectively, which means that we cannot reject the null of no carry-over effects at $\alpha = 0.05$ significant level in both cases.
+
+```{r carryover-ae-tab}
+tbl.ae.co.model <-
+  AE.crossover.model %>% 
+  tbl_regression(
+    exponentiate = T,
+    label = list(
+      period ~ "Period",
+      seq2 ~ "Sequence"
+    )
+  ) %>% 
+  modify_header(
+  update = list(p.value = "p-value", ci = "95% CI", label = "Characteristics", estimate = "OR")
+  ) 
+
+
+tbl.ae.co.model %>% as_kable(booktabs = T, caption = "Coefficent estimates of the carry-over effect model of adverse events.") %>%  kable_styling(latex_options = c("hold_position"))
+```
+
+```{r carryover-adhere-tab}
+tbl.adhere.co.model <-
+  Adhere.crossover.model %>% 
+  tbl_regression(
+    exponentiate = T,
+    label = list(
+      period ~ "Period",
+      seq2 ~ "Sequence"
+    )
+  ) %>% 
+  modify_header(
+  update = list(p.value = "p-value", ci = "95% CI", label = "Characteristics", estimate = "OR")
+  ) 
+
+
+tbl.adhere.co.model %>%   as_kable(booktabs = T, caption = "Coefficent estimates of the carry-over effect model of adherence.") %>%  kable_styling(latex_options = c("hold_position"))
+```
+
+```{r carryover-pk-bviral-tab}
+tbl.pk.co.model.b <-
+  PK.crossover.model.bviral %>% 
+  tbl_regression(
+    exponentiate = F,
+    label = list(
+      period ~ "Period",
+      seq2 ~ "Sequence"
+    )
+  ) %>% 
+  modify_header(
+  update = list(p.value = "p-value", ci = "95% CI", label = "Characteristics", estimate = "$\\hat\\beta$")
+  ) 
+
+
+tbl.pk.co.model.b %>%   as_kable(booktabs = T, caption = "Coefficent estimates of the carry-over effect model of blood viral loads.") %>%  kable_styling(latex_options = c("hold_position"))
+```
+
+```{r carryover-pk-sviral-tab}
+tbl.pk.co.model.s <-
+  PK.crossover.model.sviral %>% 
+  tbl_regression(
+    exponentiate = F,
+    label = list(
+      period ~ "Period",
+      seq2 ~ "Sequence"
+    )
+  ) %>% 
+  modify_header(
+  update = list(p.value = "p-value", ci = "95% CI", label = "Characteristics", estimate = "$\\hat\\beta$")
+  ) 
+
+
+tbl.pk.co.model.s %>%   as_kable(booktabs = T, caption = "Coefficent estimates of the carry-over effect model of skin viral loads.") %>%  kable_styling(latex_options = c("hold_position"))
+```
+
 ## Safety of the Treatments
+
+Table \@ref(tab:ae-tab) shows the coefficient estimates of the treatment effects, as well as effects of demographic factors, on the safety outcome. From the table we can see that after controlling for time variable and demographic factors, none of the treatments shows a significant effect on the occurrence of adverse event. However, we found that age has a significant effect on the occurrence of adverse event (OR = 1.22 with 95\% CI 1.12-1.32), which means that on average, an additional year of age beyond the mean age of the study population (`r round(mean(baseline.dat$age),3)` years old) is associated with 22\% increase in the odds of experiencing at least one adverse event within the treatment period.
+
+```{r ae-tab}
+model.AE %>% 
+  tbl_regression(
+    exponentiate = T,
+    label = list(
+      drug ~ "Treatment",
+      period ~ "Period",
+      age ~ "Age",
+      gender ~ "Gender",
+      race ~ "Race"
+    ),
+    include = everything()) %>% 
+  modify_header(
+  update = list(p.value = "p-value", ci = "95% CI", label = "Characteristics", estimate = "OR")
+  ) %>% 
+  as_kable(booktabs = T, caption = "Coefficent estimates of the treatment effects on the safety outcome.") %>%  
+  kable_styling(latex_options = c("hold_position"))
+```
+
 
 ## Adherence of the Treatments
 
-## 
+Table \@ref(tab:adhere-tab) shows the coefficient estimates of the treatment effects, as well as effects of demographic factors, on the adherence of treatments. From the table we can see that after controlling for time variable and demographic factors, both Gel B and Gel C have significant effects on the adherence of treatments. Specifically, compared to Pill A, patients who were using Gel B has a 85\% lower odds of adherence (OR = 0.15 with 95\% CI 0.12-0.17), while patients who were using Gel C has a 79\% lower odds of adherence (OR = 0.21 with 95\% CI 0.18-0.24). Age still has a significant effect on the adherence (OR = 1.22 with 95\% CI 1.19-1.25), which means that on average, for each additional year of age beyond the mean age of the study population, the odds of adhering to the treatment is increase by 22\%.
+
+```{r adhere-tab}
+model.Adhere %>% 
+  tbl_regression(
+    exponentiate = T,
+    label = list(
+      week ~ "Week",
+      drug ~ "Treatment",
+      period ~ "Period",
+      age ~ "Age",
+      gender ~ "Gender",
+      race ~ "Race"
+    )) %>% 
+  modify_header(
+  update = list(p.value = "p-value", ci = "95% CI", label = "Characteristics", estimate = "OR")
+  ) %>% 
+  as_kable(booktabs = T, caption = "Coefficent estimates of the treatment effects on the adherence.") %>%  
+  kable_styling(latex_options = c("hold_position"))
+```
+
+## Assessment	and	Comparison Pharmacokinetics of the Treatments
+
+Table \@ref(tab:pk-tab) shows the coefficients estimates from the two models analyzing the effects of treatments, occurrence of adverse events and adherence on the systemic (blood) and	local (skin) pharmacokinetics. From the results we can see that on average, Gel B and Gel C achieved a higher reduction on both skin and blood viral loads, and these effects are significant except for Gel B on blood viral loads. We also found that for each additional day of adherence beyond the average within a period, the viral load reduction decreased by 1.3 in blood and 2.8 in skin, which are significant. The occurrence of adverse events within the period increase the  viral loads reduction by 28 and 56 in blood and skin, respectively, which are also significant. For demographic factors, we found that age is negatively associated with viral loads reduction and female patients had a higher viral loads reduction compared to male patients.
+
+```{r pk-tab}
+tab.bviral <-
+model.PK.bviral %>% 
+  tbl_regression(
+    exponentiate = F,
+    label = list(
+      Adhere_sum_centered ~ "Days of adherece (within a period, centered)",
+      drug ~ "Treatment",
+      period ~ "Period",
+      age ~ "Age",
+      gender ~ "Gender",
+      race ~ "Race",
+      AE_ind ~ "Occurence of adverse effects"
+    )) %>% 
+  modify_header(
+  update = list(p.value = "p-value", ci = "$95\\%$ CI", label = "Characteristics", estimate = "$\\hat\\beta$")
+  )
+#tab.bviral
+
+tab.sviral <-
+model.PK.sviral %>% 
+  tbl_regression(
+    exponentiate = F,
+    label = list(
+      Adhere_sum_centered ~ "Days of adherece (within a period, centered)",
+      drug ~ "Treatment",
+      period ~ "Period",
+      age ~ "Age",
+      gender ~ "Gender",
+      race ~ "Race",
+      AE_ind ~ "Occurence of adverse effects"
+    )) %>% 
+  modify_header(
+  update = list(p.value = "p-value", ci = "$95\\%$ CI", label = "Characteristics", estimate = "$\\hat\\gamma$")
+  )
+#tab.sviral
+
+tbl_merge(
+  list(tab.bviral, tab.sviral),
+) %>% 
+  as_kable(booktabs = T, caption = "Coefficent estimates of the treatment effects on the pharmacokenitics.", escape = F) %>%  kable_styling(latex_options = c("hold_position", "scale_down")) %>% 
+  add_header_above(c("", "Blood viral loads model" = 2, "Skin viral loads model" = 2))
+```
+
+
+## Demographic Factors associated with Adherence
+
+Table \@ref(tab:adhere-demo-tab) shows the coefficient estimates of the models investigating demographic factors associated with adherence and the effects of product type and regimen on adherence. In both models, age is associated with a increase in the odds of adherence and week is associated with a decrease in the odds of adherence, which are in align with the results from the primary analyses. For product type, the odds of adherence for patients using gels, on average, is 77\% lower than patients using pills, no significant interactions with demographic factors are found. For treatment regimen, patients who are prescribed take treatments three times a day has a 51\% lower odds of adherence than patients who are prescribed to take treatments once a day. Age has a significant interaction with treatment regimen.
+
+```{r adhere-demo-tab}
+adhere.demo.tab.product <-
+  model.Adhere.product.1 %>% 
+  tbl_regression(
+    exponentiate = T,
+    label = list(
+      product ~ "Product type",
+      period ~ "Period",
+      age ~ "Age",
+      gender ~ "Gender",
+      race ~ "Race",
+      week~ "Week",
+      `age:product` ~ "Age $\\times$ Product type",
+      `product:gender` ~ "Product type $\\times$ Gender",
+      `product:race` ~ "Product type $\\times$ Race"
+    )
+  ) %>% 
+  modify_header(
+  update = list(p.value = "p-value", ci = "$95\\%$ CI", label = "Characteristics", estimate = "OR")
+  )
+
+adhere.demo.tab.freq <-
+  model.Adhere.freq.1 %>% 
+  tbl_regression(
+    exponentiate = T,
+    label = list(
+      freq ~ "Regimen",
+      period ~ "Period",
+      age ~ "Age",
+      gender ~ "Gender",
+      race ~ "Race",
+      week~ "Week",
+      `age:freq` ~ "Age $\\times$ Regimen",
+      `freq:gender` ~ "Regimen $\\times$ Gender",
+      `freq:race` ~ "Regimen $\\times$ Race"
+    )
+  ) %>% 
+  modify_header(
+  update = list(p.value = "p-value", ci = "$95\\%$ CI", label = "Characteristics", estimate = "OR")
+  )
+
+tbl_merge(list(adhere.demo.tab.product, adhere.demo.tab.freq)) %>% 
+  as_kable(booktabs = T, caption = "Coefficent estimates of the effects of demographic factors and product used on the adherence.", escape = F) %>%  kable_styling(latex_options = c("hold_position", "scale_down")) %>% 
+  add_header_above(c("", "Model for product type" = 3, "Model for regimen" = 3))
+```
 
 # Discussion
 

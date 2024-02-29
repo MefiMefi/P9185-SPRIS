@@ -6,7 +6,8 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, message = F, warning = F)
+options(knitr.kable.NA = '')
 ```
 
 ```{r}
@@ -19,6 +20,29 @@ library(DHARMa)
 library(knitr)
 library(kableExtra)
 library(webshot)
+
+write_matex <- function(x) {
+  begin <- "$$\\begin{bmatrix}"
+  end <- "\\end{bmatrix}$$"
+  X <-
+    apply(x, 1, function(x) {
+      paste(
+        paste(x, collapse = "&"),
+        "\\\\"
+      )
+    })
+  writeLines(c(begin, X, end))
+}
+theme_set(
+  theme_bw()+
+  theme(
+    plot.title = element_text(size = 16, hjust = 0.5),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(size = 12),
+    axis.text = element_text(size = 10),
+    axis.line = element_line(color = "black", size = 0.5),
+  )
+)
 ```
 
 ```{r}
@@ -234,12 +258,15 @@ xyplot(Adhere ~ period, endpoints.Adhere, type=c('g','p','l'))
 
 #### Testing crossover effects
 
-```{r }
+```{r crossoveer-AE}
 endpoints.AE.weeksum <- left_join(endpoints.AE.weeksum, Adhere.demo)
 # centered age for better interpretation
 endpoints.AE.weeksum$age <- endpoints.AE.weeksum$age - mean(endpoints.AE.weeksum$age)
 AE.crossover.model <- glmer(AE_ind ~ period + seq2 + (1|ptid), data = endpoints.AE.weeksum, family = binomial)
 summary(AE.crossover.model)
+AE.crossover.model.null <- glmer(AE_ind ~ period + (1|ptid), data = endpoints.AE.weeksum, family = binomial)
+
+anova(AE.crossover.model, AE.crossover.model.null)
 ```
 No significant crossover effect found.
 
@@ -290,11 +317,14 @@ plot(model.AE)
 
 #### Testing crossover effects
 
-```{r}
+```{r crossover-adhere}
 endpoints.Adhere <- left_join(endpoints.Adhere, Adhere.demo)
 endpoints.Adhere$age <- endpoints.Adhere$age - mean(endpoints.Adhere$age)
 Adhere.crossover.model <- glmer(cbind(Adhere, nonAdhere) ~ period + week + seq2 + (1|ptid), data = endpoints.Adhere, family = binomial)
+
+Adhere.crossover.model.null <- glmer(cbind(Adhere, nonAdhere) ~ period + week + (1|ptid), data = endpoints.Adhere, family = binomial)
 summary(Adhere.crossover.model)
+anova(Adhere.crossover.model, Adhere.crossover.model.null)
 ```
 No significant crossover effect found.
 
@@ -349,9 +379,13 @@ traj.PK
 
 endpoints.PK <- left_join(endpoints.PK, Adhere.demo)
 PK.crossover.model.bviral <- lmer(dvalue ~ period + seq2 + (1|ptid) , data = endpoints.PK %>% filter(measure == "Blood"))
+PK.crossover.model.bviral.null <- lmer(dvalue ~ period + (1|ptid) , data = endpoints.PK %>% filter(measure == "Blood"))
 summary(PK.crossover.model.bviral)
+anova(PK.crossover.model.bviral, PK.crossover.model.bviral.null)
 PK.crossover.model.sviral <- lmer(dvalue ~ period + seq2 + (1|ptid) , data = endpoints.PK %>% filter(measure == "Skin"))
+PK.crossover.model.sviral.null <- lmer(dvalue ~ period + (1|ptid) , data = endpoints.PK %>% filter(measure == "Skin"))
 summary(PK.crossover.model.sviral)
+anova(PK.crossover.model.sviral, PK.crossover.model.sviral.null)
 ```
 
 No significant crossover effect found for both type of measurements.
@@ -451,7 +485,7 @@ endpoints.Adhere.regimen <-
            drug == "Gel C" ~ "once"
          ), levels = c("once", "three times")))
 
-model.Adhere.product.1 <- glmtoolbox::glmgee(cbind(Adhere, nonAdhere) ~ period + week + age*product + gender*product + race*product, data = endpoints.Adhere.regimen, family = binomial, id = ptid, corstr = "Independence")
+model.Adhere.product.1 <- geepack::geeglm(cbind(Adhere, nonAdhere) ~ period + week + age*product + gender*product + race*product, data = endpoints.Adhere.regimen, family = binomial, id = ptid, corstr = "independence")
 
 model.Adhere.product.2 <- glmtoolbox::glmgee(cbind(Adhere, nonAdhere) ~ period + week + age*product + gender*product + race*product, data = endpoints.Adhere.regimen, family = binomial, id = ptid, corstr = "AR-M-dependent(1)")
 
@@ -461,11 +495,11 @@ AIC(model.Adhere.product.1)
 AIC(model.Adhere.product.2)
 AIC(model.Adhere.product.3)
 
-summary(model.Adhere.product.1)
-summary(model.Adhere.product.2)
-summary(model.Adhere.product.3)
+#summary(model.Adhere.product.1)
+#summary(model.Adhere.product.2)
+#summary(model.Adhere.product.3)
 
-model.Adhere.freq.1 <- glmtoolbox::glmgee(cbind(Adhere, nonAdhere) ~ period + week + age*freq + gender*freq + race*freq, data = endpoints.Adhere.regimen, family = binomial, id = ptid, corstr = "Independence")
+model.Adhere.freq.1 <- geepack::geeglm(cbind(Adhere, nonAdhere) ~ period + week + age*freq + gender*freq + race*freq, data = endpoints.Adhere.regimen, family = binomial, id = ptid, corstr = "independence")
 model.Adhere.freq.2 <- glmtoolbox::glmgee(cbind(Adhere, nonAdhere) ~ period + week + age*freq + gender*freq + race*freq, data = endpoints.Adhere.regimen, family = binomial, id = ptid, corstr = "AR-M-dependent(1)")
 model.Adhere.freq.3 <- glmtoolbox::glmgee(cbind(Adhere, nonAdhere) ~ period + week + age*freq + gender*freq + race*freq, data = endpoints.Adhere.regimen, family = binomial, id = ptid, corstr = "Exchangeable")
 
@@ -473,9 +507,9 @@ AIC(model.Adhere.freq.1)
 AIC(model.Adhere.freq.2)
 AIC(model.Adhere.freq.3)
 
-summary(model.Adhere.freq.1)
-summary(model.Adhere.product.2)
-summary(model.Adhere.product.3)
+#summary(model.Adhere.freq.1)
+#summary(model.Adhere.product.2)
+#summary(model.Adhere.product.3)
 ```
 
 

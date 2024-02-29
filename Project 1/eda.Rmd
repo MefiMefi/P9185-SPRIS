@@ -538,12 +538,12 @@ endpoints.AE.weeksum %>%
 ```
 
 ```{r}
-# endpoints.PK %>%
-#   ggplot(aes(y=dvalue, x=period,color = drug)) +
-#   geom_line(alpha = 0.2,aes(group = factor(ptid)))+
-#   geom_point(alpha = 0.1, size = 0.8)+
-#   facet_grid(measure~seq2)+
-#   theme_bw()
+endpoints.PK %>%
+  ggplot(aes(y=dvalue, x=period,color = drug)) +
+  geom_line(alpha = 0.2,aes(group = factor(ptid)))+
+  geom_point(alpha = 0.1, size = 0.8)+
+  facet_grid(measure~seq2)+
+  theme_bw()
 ```
 
 ```{r}

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023) (preloaded format=pdflatex 2024.2.23)  27 FEB 2024 23:30
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023) (preloaded format=pdflatex 2024.2.23)  29 FEB 2024 00:45
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -604,81 +604,122 @@ Overfull \hbox (7.5646pt too wide) detected at line 259
 [][]
  []
 
-[5] [6] [7]
+[5] [6] [7] [8]
+<P9185_project1_report_rw2844_files/figure-latex/long-plot-1.pdf, id=185, 469.755pt x 325.215pt>
+File: P9185_project1_report_rw2844_files/figure-latex/long-plot-1.pdf Graphic file (type pdf)
+<use P9185_project1_report_rw2844_files/figure-latex/long-plot-1.pdf>
+Package pdftex.def Info: P9185_project1_report_rw2844_files/figure-latex/long-plot-1.pdf  used on input line 395.
+(pdftex.def)             Requested size: 469.75386pt x 325.2142pt.
+[9] [10 <./P9185_project1_report_rw2844_files/figure-latex/long-plot-1.pdf>]
+<P9185_project1_report_rw2844_files/figure-latex/plot-adhere-demo-1.pdf, id=210, 469.755pt x 325.215pt>
+File: P9185_project1_report_rw2844_files/figure-latex/plot-adhere-demo-1.pdf Graphic file (type pdf)
+<use P9185_project1_report_rw2844_files/figure-latex/plot-adhere-demo-1.pdf>
+Package pdftex.def Info: P9185_project1_report_rw2844_files/figure-latex/plot-adhere-demo-1.pdf  used on input line 403.
+(pdftex.def)             Requested size: 469.75386pt x 325.2142pt.
+<P9185_project1_report_rw2844_files/figure-latex/pk-plots-1.pdf, id=212, 433.62pt x 578.16pt>
+File: P9185_project1_report_rw2844_files/figure-latex/pk-plots-1.pdf Graphic file (type pdf)
+<use P9185_project1_report_rw2844_files/figure-latex/pk-plots-1.pdf>
+Package pdftex.def Info: P9185_project1_report_rw2844_files/figure-latex/pk-plots-1.pdf  used on input line 411.
+(pdftex.def)             Requested size: 433.63878pt x 578.18504pt.
+[11 <./P9185_project1_report_rw2844_files/figure-latex/plot-adhere-demo-1.pdf>] [12 <./P9185_project1_report_rw2844_files/figure-latex/pk-plots-1.pdf>]
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[8] [9] [10]
-LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 406.
+[13] [14] [15] [16]
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+[17]
+
+LaTeX Warning: Text page 18 contains only floats.
+
+[18] [19]
+LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 668.
 (c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <10> not available
-(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 407.
-LaTeX Font Info:    Trying to load font information for TS1+lmtt on input line 408.
+(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 669.
+LaTeX Font Info:    Trying to load font information for TS1+lmtt on input line 684.
 (c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/lm/ts1lmtt.fd
 File: ts1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
-) [11{c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}]
-Underfull \vbox (badness 10000) detected at line 647
+) [20{c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}]
+Underfull \vbox (badness 10000) detected at line 980
  []
 
 
-Overfull \vbox (0.73672pt too high) detected at line 647
+Overfull \vbox (0.10448pt too high) detected at line 980
  []
 
-[12]
-Underfull \vbox (badness 10000) detected at line 647
- []
-
-
-Overfull \vbox (0.6387pt too high) detected at line 647
- []
-
-[13]
-Underfull \vbox (badness 10000) detected at line 647
+[21]
+Underfull \vbox (badness 10000) detected at line 980
  []
 
 
-Overfull \vbox (0.6387pt too high) detected at line 647
+Overfull \vbox (0.10448pt too high) detected at line 980
  []
 
-[14]
-Underfull \vbox (badness 10000) detected at line 647
- []
-
-
-Overfull \vbox (0.6387pt too high) detected at line 647
- []
-
-[15]
-Underfull \vbox (badness 10000) detected at line 647
+[22]
+Underfull \vbox (badness 10000) detected at line 980
  []
 
 
-Underfull \vbox (badness 10000) detected at line 647
+Underfull \vbox (badness 10000) detected at line 980
  []
 
-[16] [17] (./P9185_project1_report_rw2844.aux)
+[23]
+Underfull \vbox (badness 10000) detected at line 980
+ []
+
+
+Underfull \vbox (badness 10000) detected at line 980
+ []
+
+[24]
+Underfull \vbox (badness 10000) detected at line 980
+ []
+
+
+Underfull \vbox (badness 10000) detected at line 980
+ []
+
+[25]
+Underfull \vbox (badness 10000) detected at line 980
+ []
+
+
+Underfull \vbox (badness 10000) detected at line 980
+ []
+
+[26]
+Underfull \vbox (badness 10000) detected at line 980
+ []
+
+
+Underfull \vbox (badness 10000) detected at line 980
+ []
+
+[27] [28] (./P9185_project1_report_rw2844.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-02-20>
  ***********
 Package rerunfilecheck Info: File `P9185_project1_report_rw2844.out' has not changed.
-(rerunfilecheck)             Checksum: D0B1D13FA26F8BFE45AAFA8C8278ECC2;3168.
+(rerunfilecheck)             Checksum: 4B8F04C8774422E1F22B51533123B8F4;4634.
  ) 
 Here is how much of TeX's memory you used:
- 13667 strings out of 476097
- 213017 string characters out of 5792236
- 1953190 words of memory out of 5000000
- 35420 multiletter control sequences out of 15000+600000
+ 13748 strings out of 476097
+ 215688 string characters out of 5792236
+ 1961190 words of memory out of 5000000
+ 35467 multiletter control sequences out of 15000+600000
  629613 words of font info for 89 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 75i,11n,79p,1227b,477s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,13n,79p,1227b,477s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmbx12.pfb><c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi12.pfb><c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi8.pfb><c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr12.pfb><c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr17.pfb><c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr8.pfb><c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmsy10.pfb><c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmtk10.pfb><c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmtt10.pfb><c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmtti10.pfb>
-Output written on P9185_project1_report_rw2844.pdf (17 pages, 243866 bytes).
+Output written on P9185_project1_report_rw2844.pdf (28 pages, 398897 bytes).
 PDF statistics:
- 276 PDF objects out of 1000 (max. 8388607)
- 231 compressed objects within 3 object streams
- 69 named destinations out of 1000 (max. 500000)
- 161 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 408 PDF objects out of 1000 (max. 8388607)
+ 345 compressed objects within 4 object streams
+ 103 named destinations out of 1000 (max. 500000)
+ 224 words of extra memory for PDF output out of 10000 (max. 10000000)
 
