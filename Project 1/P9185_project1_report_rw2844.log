@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023) (preloaded format=pdflatex 2024.2.23)  29 FEB 2024 14:28
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023) (preloaded format=pdflatex 2024.2.23)  29 FEB 2024 19:48
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -625,7 +625,17 @@ Package pdftex.def Info: P9185_project1_report_rw2844_files/figure-latex/pk-plot
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[13] [14] [15] [16]
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+[13]
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+[14] [15] [16]
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
@@ -633,93 +643,93 @@ LaTeX Warning: `!h' float specifier changed to `!ht'.
 
 LaTeX Warning: Text page 18 contains only floats.
 
-[18] [19] [20]
-LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 684.
+[18] [19]
+LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 678.
 (c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <10> not available
-(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 685.
-LaTeX Font Info:    Trying to load font information for TS1+lmtt on input line 700.
+(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 679.
+LaTeX Font Info:    Trying to load font information for TS1+lmtt on input line 694.
 (c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/lm/ts1lmtt.fd
 File: ts1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
-) [21{c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}]
-Underfull \vbox (badness 10000) detected at line 996
+) [20{c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}]
+Underfull \vbox (badness 10000) detected at line 990
  []
 
 
-Overfull \vbox (0.10448pt too high) detected at line 996
+Overfull \vbox (0.73672pt too high) detected at line 990
+ []
+
+[21]
+Underfull \vbox (badness 10000) detected at line 990
+ []
+
+
+Overfull \vbox (0.73672pt too high) detected at line 990
  []
 
 [22]
-Underfull \vbox (badness 10000) detected at line 996
+Underfull \vbox (badness 10000) detected at line 990
  []
 
 
-Overfull \vbox (0.10448pt too high) detected at line 996
+Underfull \vbox (badness 10000) detected at line 990
  []
 
 [23]
-Underfull \vbox (badness 10000) detected at line 996
+Underfull \vbox (badness 10000) detected at line 990
  []
 
 
-Underfull \vbox (badness 10000) detected at line 996
+Underfull \vbox (badness 10000) detected at line 990
  []
 
 [24]
-Underfull \vbox (badness 10000) detected at line 996
+Underfull \vbox (badness 10000) detected at line 990
  []
 
 
-Underfull \vbox (badness 10000) detected at line 996
+Underfull \vbox (badness 10000) detected at line 990
  []
 
 [25]
-Underfull \vbox (badness 10000) detected at line 996
+Underfull \vbox (badness 10000) detected at line 990
  []
 
 
-Underfull \vbox (badness 10000) detected at line 996
+Overfull \vbox (0.68pt too high) detected at line 990
  []
 
 [26]
-Underfull \vbox (badness 10000) detected at line 996
+Underfull \vbox (badness 10000) detected at line 990
  []
 
 
-Underfull \vbox (badness 10000) detected at line 996
+Underfull \vbox (badness 10000) detected at line 990
  []
 
-[27]
-Underfull \vbox (badness 10000) detected at line 996
- []
-
-
-Underfull \vbox (badness 10000) detected at line 996
- []
-
-[28] [29] (./P9185_project1_report_rw2844.aux)
+[27] [28] (./P9185_project1_report_rw2844.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-02-20>
  ***********
 Package rerunfilecheck Info: File `P9185_project1_report_rw2844.out' has not changed.
-(rerunfilecheck)             Checksum: 4B8F04C8774422E1F22B51533123B8F4;4634.
+(rerunfilecheck)             Checksum: 6F811B94C9AF4F753E9E198D637E5EFF;4634.
  ) 
 Here is how much of TeX's memory you used:
- 13749 strings out of 476097
- 215695 string characters out of 5792236
+ 13748 strings out of 476097
+ 215688 string characters out of 5792236
  1961190 words of memory out of 5000000
  35467 multiletter control sequences out of 15000+600000
  629613 words of font info for 89 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  75i,13n,79p,1227b,477s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmbx12.pfb><c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi12.pfb><c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi8.pfb><c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr12.pfb><c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr17.pfb><c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr8.pfb><c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmsy10.pfb><c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmtk10.pfb><c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmtt10.pfb><c:/Users/Ryan/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmtti10.pfb>
-Output written on P9185_project1_report_rw2844.pdf (29 pages, 402297 bytes).
+Output written on P9185_project1_report_rw2844.pdf (28 pages, 405086 bytes).
 PDF statistics:
- 412 PDF objects out of 1000 (max. 8388607)
- 348 compressed objects within 4 object streams
- 104 named destinations out of 1000 (max. 500000)
+ 408 PDF objects out of 1000 (max. 8388607)
+ 345 compressed objects within 4 object streams
+ 103 named destinations out of 1000 (max. 500000)
  224 words of extra memory for PDF output out of 10000 (max. 10000000)
 

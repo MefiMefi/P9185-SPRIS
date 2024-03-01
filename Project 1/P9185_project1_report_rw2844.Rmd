@@ -1,6 +1,6 @@
 ---
-title: "P9185_Project1_Report_rw2844"
-author: "Ryan Wei"
+title: "Evaluating Treatment Safety, Adherence and Pharmacokinetics in MATIK: A Comprehensive Analysis of Phase II Trial Data"
+author: "Ryan Wei  UNI: rw2844"
 output: 
   bookdown::pdf_document2:
     toc: no
@@ -306,7 +306,7 @@ library(patchwork)
 plot.adhere.demo
 ```
 
-For the secondary endpoint, figure \@ref(fig:pk-plots) shows the overall viral loads change of different treatment groups. We found that Gel C achieved a higher viral loads reduction in both skin viral load and blood viral load compared to Gel B and Gel C. We also found that the occurence of adverse event is associated with a higher reduction in viral loads, while higher adherence is associated with a lower reduction in viral loads.
+For the secondary endpoint, figure \@ref(fig:pk-plots) shows the overall viral loads change of different treatment groups. We found that Pill A achieved a higher viral loads reduction in both skin viral load and blood viral load compared to Gel B and Gel C. We also found that the occurrence of adverse event is associated with a slightly lower reduction in viral loads, while higher adherence is associated with a higher reduction in viral loads, especially in patients who were using Gel B and Gel C.
 
 ```{r pk-plots,fig.cap="Viral loads change of different treatment groups. Upper panel: stratified by measurement type and occurence of adverse event. Lower panel: change in viral loads versus the number of adherence days, stratified by treatments and measurement types.", fig.width=6, fig.height=8, message=F}
 plot.pk.ae <-
@@ -384,11 +384,11 @@ tbl.pk.co.model.b <-
     )
   ) %>% 
   modify_header(
-  update = list(p.value = "p-value", ci = "95% CI", label = "Characteristics", estimate = "$\\hat\\beta$")
+  update = list(p.value = "p-value", ci = "$95\\%$ CI", label = "Characteristics", estimate = "$\\hat\\beta$")
   ) 
 
 
-tbl.pk.co.model.b %>%   as_kable(booktabs = T, caption = "Coefficent estimates of the carry-over effect model of blood viral loads.") %>%  kable_styling(latex_options = c("hold_position"))
+tbl.pk.co.model.b %>%   as_kable(booktabs = T, caption = "Coefficent estimates of the carry-over effect model of blood viral loads.", escape = F) %>%  kable_styling(latex_options = c("hold_position"))
 ```
 
 ```{r carryover-pk-sviral-tab}
@@ -402,11 +402,11 @@ tbl.pk.co.model.s <-
     )
   ) %>% 
   modify_header(
-  update = list(p.value = "p-value", ci = "95% CI", label = "Characteristics", estimate = "$\\hat\\beta$")
+  update = list(p.value = "p-value", ci =  "$95\\%$ CI", label = "Characteristics", estimate = "$\\hat\\beta$")
   ) 
 
 
-tbl.pk.co.model.s %>%   as_kable(booktabs = T, caption = "Coefficent estimates of the carry-over effect model of skin viral loads.") %>%  kable_styling(latex_options = c("hold_position"))
+tbl.pk.co.model.s %>%   as_kable(booktabs = T, caption = "Coefficent estimates of the carry-over effect model of skin viral loads.", escape = F) %>%  kable_styling(latex_options = c("hold_position"))
 ```
 
 ## Safety of the Treatments
@@ -458,7 +458,7 @@ model.Adhere %>%
 
 ## Assessment	and	Comparison Pharmacokinetics of the Treatments
 
-Table \@ref(tab:pk-tab) shows the coefficients estimates from the two models analyzing the effects of treatments, occurrence of adverse events and adherence on the systemic (blood) and	local (skin) pharmacokinetics. From the results we can see that on average, Gel B and Gel C achieved a higher reduction on both skin and blood viral loads, and these effects are significant except for Gel B on blood viral loads. We also found that for each additional day of adherence beyond the average within a period, the viral load reduction decreased by 1.3 in blood and 2.8 in skin, which are significant. The occurrence of adverse events within the period increase the  viral loads reduction by 28 and 56 in blood and skin, respectively, which are also significant. For demographic factors, we found that age is negatively associated with viral loads reduction and female patients had a higher viral loads reduction compared to male patients.
+Table \@ref(tab:pk-tab) shows the coefficients estimates from the two models analyzing the effects of treatments, occurrence of adverse events and adherence on the systemic (blood) and	local (skin) pharmacokinetics. From the results we can see that on average, Gel B and Gel C have a lower reduction on both skin and blood viral loads, compared with Pill A, and these effects are significant except for Gel B on blood viral loads. We also found that for each additional day of adherence beyond the average within a period, the viral load reduction increased by 1.6 in blood and 2.3 in skin, which are significant effects. The occurrence of adverse events within the period decrease the  viral loads reduction by 23 and 54 in blood and skin, respectively, which are also significant effects. For demographic factors, we found that age is significantly negatively associated with viral loads reduction.
 
 ```{r pk-tab}
 tab.bviral <-
@@ -557,28 +557,23 @@ tbl_merge(list(adhere.demo.tab.product, adhere.demo.tab.freq)) %>%
 
 # Discussion
 
-The analysis of the Phase II trial data provides a robust foundation for advancing to Phase III. In this discussion, we synthesize the results and delineate the implications for future trials, particularly in the context of treatment efficacy, safety, and patient adherence.
+The analysis of the MATIK Phase II trial data provides a robust foundation for advancing to Phase III. In this discussion, we synthesize the results and delineate the implications for future trials, particularly in the context of treatment efficacy, safety, and patient adherence.
 
-The Phase II trial's balanced baseline characteristics across treatment groups reinforce the effectiveness of the randomization procedure, which is crucial for the internal validity of the study. This balance minimizes confounding factors, thereby enabling a more accurate assessment of the treatments' true effects. Notably, the trend towards increased adverse events over time necessitates close monitoring in subsequent studies.
+This trial's balanced baseline characteristics across treatment groups reinforce the effectiveness of the randomization procedure, which is crucial for the internal validity of the study. This balance minimizes confounding factors, thereby enabling a more accurate assessment of the treatments' true effects. Notably, the trend towards increased adverse events over time necessitates close monitoring in subsequent studies.
 
-In considering treatments for a Phase III trial, the data suggests that Pill A exhibits a superior adherence profile compared to Gels B and C. Given the importance of adherence in chronic conditions management, Pill A emerges as a strong candidate for further investigation. However, the higher viral load reductions associated with Gel C cannot be overlooked, as this indicates a potent therapeutic effect.
+In considering treatments for a Phase III trial, the data suggests that Pill A exhibits a superior adherence profile compared to Gels B and C while not increasing the risk of experiencing adverse events. Given the importance of adherence in skin disease conditions management, Pill A emerges as a strong candidate for further investigation. The significant viral load reductions observed with Pill A warrant special attention, as they highlight its robust therapeutic efficacy.
 
-For the Phase III trial design, a randomized controlled trial (RCT) remains the gold standard to confirm these findings. The RCT should be adequately powered to detect differences in adherence and viral load reductions, taking into account the observed effects from Phase II. Additionally, stratification by demographic factors, as indicated by the increased adherence with age, could be beneficial.
+For the Phase III trial design, a randomized controlled trial (RCT) remains the gold standard to confirm these findings. The RCT should be adequately powered to detect differences in adherence and viral load reductions, taking into account the observed effects from Phase II. Additionally, stratification by demographic factors, as indicated by the increased adherence with age, could be beneficial. Information from this trial that will be valuable for planning Phase III includes the adherence rates over time, the incidence and pattern of adverse events, and the demographic factors influencing treatment outcomes. Additional data that would be beneficial includes long-term follow-up for safety and efficacy, quality of life assessments, and pharmacoeconomic analyses to inform the broader impact of the treatments. To calculate the sample size needed for the Phase III study, the investigator needs to specify type I, II error rates, and the effect sizes.
 
-Information from Phase II that will be valuable for planning Phase III includes the adherence rates over time, the incidence and pattern of adverse events, and the demographic factors influencing treatment outcomes. Additional data that would be beneficial includes long-term follow-up for safety and efficacy, quality of life assessments, and pharmacoeconomic analyses to inform the broader impact of the treatments.
+This analysis is not without limitations. The generalizability of the findings is constrained by the sample size and the specific patient population studied. Furthermore, the occurrence of adverse events, though monitored, may not fully encapsulate the long-term safety profile of the treatments. Adherence could be self-reported, which can introduce reporting bias. Phase III trials should aim to include objective adherence measures and a more diverse patient population to enhance the external validity of the findings.
 
-This analysis is not without limitations. The generalizability of the findings is constrained by the sample size and the specific patient population studied. Furthermore, the occurrence of adverse events, though monitored, may not fully encapsulate the long-term safety profile of the treatments. Adherence was self-reported, which can introduce reporting bias. Phase III trials should aim to include objective adherence measures and a more diverse patient population to enhance the external validity of the findings.
-
-Based on the Phase II results, Pill A would be recommended for the Phase III trial given its adherence advantage. However, further investigation into optimizing Gel C's regimen could improve its adherence profile, making it a contender given its efficacy. Phase III should seek to confirm these findings, with a focus on long-term outcomes and real-world adherence patterns.
-
-To prepare for Phase III, further elucidation of the mechanisms driving the differences in adherence and viral load reductions is needed. Additionally, understanding patient preferences and barriers to adherence could inform interventions to enhance compliance. A pivotal Phase III trial should incorporate these considerations to ensure that the selected treatment not only demonstrates efficacy and safety but also aligns with patient needs for long-term disease management.
+In conclusion, the Phase II trial findings for MATIK treatment present a compelling case for advancing Pill A into Phase III trials, emphasizing its adherence advantage and significant viral load reduction without increasing adverse events. As we proceed, it will be critical to address the limitations observed, particularly by expanding the sample size and incorporating objective adherence measures. The upcoming Phase III trial will not only seek to corroborate these promising results but also expand our understanding of Pill A's long-term safety and efficacy, ultimately aiming to improve patient care in skin disease management
 
 
 \newpage
 # Appendix {-}
 
-\newpage
-## A.2 Code for This Report {-}
+## A.1 Code for This Report {-}
 
 \fontsize{10pt}{12pt}\selectfont
 ```{r ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
