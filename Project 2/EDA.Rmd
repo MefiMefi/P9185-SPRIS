@@ -1,0 +1,35 @@
+---
+title: "EDA"
+author: "Ryan Wei"
+date: "2024-03-19"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+source(knitr::purl("./data_manipulation.Rmd", quiet=TRUE))
+```
+
+```{r}
+table(data.full$treatment_group, data.full$day)
+```
+
+```{r eda-traj}
+data.full %>% 
+  ggplot(aes(x = day_fct, y = mem_comp)) +
+  geom_line(alpha = 0.2, linewidth = 0.5, aes(group = subject_id)) +
+  facet_grid(.~treatment_group) + 
+  geom_smooth(color="blue", method="lm", aes(group = 1), se = FALSE)
+```
+
+```{r eda-traj-comp-drop}
+data.comp %>% 
+  group_by(subject_id) %>% 
+  mutate(total_obs = sum(as.numeric(observed))) %>% 
+  ungroup() %>% 
+  mutate(completer = as.numeric(ifelse(total_obs == 4, 1, 0)))
+```
+

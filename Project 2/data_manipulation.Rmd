@@ -1,0 +1,42 @@
+---
+title: "data_manipulation"
+author: "Ryan Wei"
+date: "2024-03-19"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+# Data Manipulation
+
+## Create a dataset with missing indicators
+
+```{r}
+data.full <- read.csv("./data.csv") %>% janitor::clean_names() %>% 
+  mutate(
+    day_fct = factor(day, levels = c(0,5,19,90)),
+    gender = factor(gender, levels = c("M", "F")),
+    treatment_group = factor(treatment_group, levels = c("A","B","C"))
+  )
+# Create a complete grid of all possible combinations of subject_id and day
+data.all <- expand.grid(subject_id = unique(data.full$subject_id), 
+                             day = c(0, 5, 19, 90))
+
+# Merge the complete data with existing data
+data.comp <- 
+  merge(data.all , data.full , by = c("subject_id", "day"), all.x = TRUE) %>% 
+  group_by(subject_id) %>% 
+  fill(age:treatment_group, .direction = "downup") %>% 
+  ungroup() %>% 
+  mutate(
+    observed = as.numeric(!is.na(mem_comp)),
+    day_fct = factor(day, levels = c(0,5,19,90))
+  )
+```
+
