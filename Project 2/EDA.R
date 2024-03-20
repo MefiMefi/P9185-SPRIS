@@ -1,27 +1,18 @@
----
-title: "EDA"
-author: "Ryan Wei"
-date: "2024-03-19"
-output: pdf_document
----
-
-```{r setup, include=FALSE}
+## ----setup, include=FALSE---------------------------------------------------------------------------------
 knitr::opts_chunk$set(echo = TRUE)
-```
 
-```{r}
+
+## ---------------------------------------------------------------------------------------------------------
 source(knitr::purl("./data_manipulation.Rmd", quiet=TRUE))
 theme_set(theme_bw())
 library(tidyverse)
-```
 
 
-```{r}
+## ---------------------------------------------------------------------------------------------------------
 table(data.full$treatment_group, data.full$day)
-```
 
-Outcome trajectories across different treatment groups
-```{r eda-traj}
+
+## ----eda-traj---------------------------------------------------------------------------------------------
 traj.plot<-
 data.full %>% 
   ggplot(aes(x = day_fct, y = mem_comp)) +
@@ -40,11 +31,9 @@ data.full %>%
   ylab("Composite memory score")+
   xlab("Days of observation")
 traj.boxplot
-```
 
 
-Mean response for different type of observations and treatment groups
-```{r eda-traj-comp-drop}
+## ----eda-traj-comp-drop-----------------------------------------------------------------------------------
 mean.score.plot <-
 data.comp %>% 
   group_by(subject_id) %>% 
@@ -65,10 +54,9 @@ data.comp %>%
   theme_bw()
 
 mean.score.plot
-```
 
 
-```{r}
+## ---------------------------------------------------------------------------------------------------------
 mean.score.boxplot <-
 data.comp %>% 
   group_by(subject_id) %>% 
@@ -83,11 +71,9 @@ data.comp %>%
   theme_bw()
 
 mean.score.boxplot
-```
 
 
-Proportion of remaining in the study, i.e., survival curve
-```{r}
+## ---------------------------------------------------------------------------------------------------------
 library(survival)
 library(ggsurvfit)
 library(survminer)
@@ -121,5 +107,4 @@ ggsurvplot(
 stay.plot <- stay.plot$plot + scale_x_continuous(labels = c("0", "5", "19", "90"))
 
 stay.plot
-```
 
