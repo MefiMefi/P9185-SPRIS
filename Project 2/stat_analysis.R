@@ -1,20 +1,13 @@
----
-title: "stat_analysis"
-author: "Ryan Wei"
-date: "2024-03-19"
-output: pdf_document
----
-
-```{r setup, include=FALSE}
+## ----setup, include=FALSE-----------------------------------------------------
 knitr::opts_chunk$set(echo = TRUE)
-```
 
-```{r}
+
+## -----------------------------------------------------------------------------
 source(knitr::purl("./data_manipulation.Rmd", quiet=TRUE))
 source(knitr::purl("./EDA.Rmd", quiet=TRUE))
-```
 
-```{r table1}
+
+## ----table1-------------------------------------------------------------------
 data.baseline <- data.comp %>% filter(day == 0)
 
 library(table1)
@@ -31,20 +24,16 @@ my.render.cont <- function(x) {
 tbl1 <- table1( ~ gender + age + mem_comp | treatment_group, data=data.baseline, render.continuous=my.render.cont)
 
 tbl1
-```
 
 
-```{r}
+## -----------------------------------------------------------------------------
 # centering age for better interpretation
 data.full$age = data.full$age - mean(data.full$age)
 data.comp$age = data.comp$age - mean(data.comp$age)
 data.surv$age = data.surv$age - mean(data.surv$age)
-```
 
 
-# Complete case GEE
-
-```{r model-complete-case-gee}
+## ----model-complete-case-gee--------------------------------------------------
 library(gee)
 library(geepack)
 library(glmtoolbox)
@@ -72,22 +61,16 @@ model.complete.3 <- geeglm(mem_comp ~ day_fct + treatment_group + age + gender +
 tbl_merge(
   list(tbl_regression(model.complete.1), tbl_regression(model.complete.2), tbl_regression(model.complete.3))
 )
-```
 
 
-# Testing MCAR
-
-```{r model-test-mcar}
+## ----model-test-mcar----------------------------------------------------------
 model.drop <-
   geeglm(drop ~ day_fct + treatment_group + age + gender + mem_comp_lag, data = data.comp.lag, family = binomial, id = subject_id, corstr = "independence")
 
 tbl_regression(model.drop, exponentiate = F)
-```
-No significant evidence of violating MCAR...
 
-# Linear mixed effect models
 
-```{r model-lmer}
+## ----model-lmer---------------------------------------------------------------
 library(lme4)
 library(nlme)
 library(lattice)
@@ -99,12 +82,9 @@ model.lmer = lmer(
 )
 
 tbl_regression(model.lmer)
-```
 
 
-# IPW GEE
-
-```{r model-ps}
+## ----model-ps-----------------------------------------------------------------
 # propensity score models, using logistic regression and coxph model 
 model.prob.drop <-
   geeglm(dropped ~ day_fct + treatment_group + age + gender, data = data.surv %>% mutate(day_fct = factor(day_fct,levels = c(5,19,90))), family = binomial, id = subject_id, corstr = "independence")
@@ -131,8 +111,8 @@ data.comp <-
     prob.stay = ifelse(day_fct==0, 1, prob.stay),
     prob.stay.coxph = ifelse(day_fct==0, 1, prob.stay.coxph)
   )
-```
-```{r model-ipw-gee}
+
+## ----model-ipw-gee------------------------------------------------------------
 model.ipw.1 <- geeglm(mem_comp ~ day_fct + treatment_group + age + gender + treatment_group * day_fct, data = data.comp, family = gaussian, id = subject_id, corstr = "independence", weights = 1/prob.stay)
 model.ipw.2 <- geeglm(mem_comp ~ day_fct + treatment_group + age + gender + treatment_group * day_fct, data = data.comp, family = gaussian, id = subject_id,  corstr = "ar1", weights = 1/prob.stay)
 model.ipw.3 <- geeglm(mem_comp ~ day_fct + treatment_group + age + gender + treatment_group * day_fct, data = data.comp, family = gaussian, id = subject_id, corstr = "exchangeable", weights = 1/prob.stay)
@@ -141,8 +121,8 @@ model.ipw.3 <- geeglm(mem_comp ~ day_fct + treatment_group + age + gender + trea
 tbl_merge(
   list(tbl_regression(model.ipw.1), tbl_regression(model.ipw.2), tbl_regression(model.ipw.3))
 )
-```
-```{r model-ipw-gee-coxph}
+
+## ----model-ipw-gee-coxph------------------------------------------------------
 model.ipw.coxph.1 <- geeglm(mem_comp ~ day_fct + treatment_group + age + gender + treatment_group * day_fct, data = data.comp, family = gaussian, id = subject_id, corstr = "independence", weights = 1/prob.stay.coxph)
 model.ipw.coxph.2 <- geeglm(mem_comp ~ day_fct + treatment_group + age + gender + treatment_group * day_fct, data = data.comp, family = gaussian, id = subject_id,  corstr = "ar1", weights = 1/prob.stay.coxph)
 model.ipw.coxph.3 <- geeglm(mem_comp ~ day_fct + treatment_group + age + gender + treatment_group * day_fct, data = data.comp, family = gaussian, id = subject_id, corstr = "exchangeable", weights = 1/prob.stay.coxph)
@@ -151,13 +131,9 @@ model.ipw.coxph.3 <- geeglm(mem_comp ~ day_fct + treatment_group + age + gender 
 tbl_merge(
   list(tbl_regression(model.ipw.coxph.1), tbl_regression(model.ipw.coxph.2), tbl_regression(model.ipw.coxph.3))
 )
-```
 
 
-
-# Sensitivity analysis
-
-```{r}
+## -----------------------------------------------------------------------------
 data.comp %>% 
     group_by(day_fct) %>% 
     summarise(observed = round(sum(!is.na(mem_comp))/158,digits=2), missing = round(sum(is.na(mem_comp))/30, digits = 2))
@@ -179,5 +155,4 @@ data.comp %>%
     summarise(observed = round(sum(!is.na(mem_comp))/158,digits=2), missing = round(sum(is.na(mem_comp))/30, digits = 2))
 temp <- matrix(c(58, 46, 54, 10, 10, 10),nrow=2,ncol=2)
 chisq.test(temp,correct=FALSE)
-```
 

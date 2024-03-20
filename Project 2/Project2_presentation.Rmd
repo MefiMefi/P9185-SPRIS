@@ -1,24 +1,35 @@
 ---
 title: "Project 2"
-author: "Fanyu Cui, Ryan Wei<br>
-<span style = 'font-size: 50%;'>
-Mailman School of Public Health, Columbia University<br>
-Department of Biostatistics</span>"
+author: "Fanyu Cui, Ryan Wei"
 date: "3/21/2024"
-output:
-  xaringan::moon_reader:
-    nature:
-      titleSlideClass: ["left", "middle", "inverse"]
-    css: [default]
+output: beamer_presentation
 ---
 
 
 ---
 ## Introduction
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = F, warning = F)
+```{r setup-pre, include=FALSE}
+knitr::opts_chunk$set(echo = F, message = F, warning = F)
 library(xaringan)
+source(knitr::purl("./data_manipulation.Rmd", quiet=TRUE))
+source(knitr::purl("./EDA.Rmd", quiet=TRUE))
+source(knitr::purl("./stat_analysis.Rmd", quiet=TRUE))
 ```
 
 ---
 ## Exploratory Data Analysis
+fdasfsdaf
+---
+## Method
+
+---
+## Model Results
+
+
+---
+```{r test}
+tbl_merge(
+  list(tbl_regression(model.ipw.coxph.1), tbl_regression(model.ipw.coxph.2), tbl_regression(model.ipw.coxph.3))
+)
+```
+
