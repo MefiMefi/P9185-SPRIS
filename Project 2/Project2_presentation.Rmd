@@ -1,0 +1,24 @@
+---
+title: "Project 2"
+author: "Fanyu Cui, Ryan Wei<br>
+<span style = 'font-size: 50%;'>
+Mailman School of Public Health, Columbia University<br>
+Department of Biostatistics</span>"
+date: "3/21/2024"
+output:
+  xaringan::moon_reader:
+    nature:
+      titleSlideClass: ["left", "middle", "inverse"]
+    css: [default]
+---
+
+
+---
+## Introduction
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = F, warning = F)
+library(xaringan)
+```
+
+---
+## Exploratory Data Analysis
