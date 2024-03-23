@@ -1,12 +1,12 @@
-## ----setup, include=FALSE---------------------------------------------------------------------------------
+## ----setup, include=FALSE-------------------------------------------------------------------
 knitr::opts_chunk$set(echo = TRUE)
 
 
-## ---------------------------------------------------------------------------------------------------------
+## -------------------------------------------------------------------------------------------
 library(tidyverse)
 
 
-## ---------------------------------------------------------------------------------------------------------
+## -------------------------------------------------------------------------------------------
 data.full <- read.csv("./data.csv") %>% janitor::clean_names() %>% 
   mutate(
     day_fct = factor(day, levels = c(0,5,19,90)),
@@ -26,5 +26,9 @@ data.comp <-
   mutate(
     observed = as.numeric(!is.na(mem_comp)),
     day_fct = factor(day, levels = c(0,5,19,90))
-  )
+  ) %>% 
+  arrange(subject_id, day) %>% 
+  group_by(subject_id) %>% 
+  mutate(baseline_mem_comp = first(mem_comp)) %>% 
+  mutate(mem_comp_delta = mem_comp - baseline_mem_comp, na.rm = T)
 

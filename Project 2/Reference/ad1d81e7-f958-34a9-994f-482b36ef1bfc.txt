@@ -1,0 +1,15 @@
+@article{ad1d81e7-f958-34a9-994f-482b36ef1bfc,
+ ISSN = {0006341X, 15410420},
+ URL = {http://www.jstor.org/stable/3068473},
+ abstract = {Marginal generalized linear models are now frequently used for the analysis of longitudinal data. Semiparametric inference for marginal models was introduced by Liang and Zeger (1986, Biometrics 73, 13-22). This article develops a general parametric class of serial dependence models that permits likelihood-based marginal regression analysis of binary response data. The methods naturally extend the first-order Markov models of Azzalini (1994, Biometrika 81, 767-775) and prove computationally feasible for long series.},
+ author = {Patrick J. Heagerty},
+ journal = {Biometrics},
+ number = {2},
+ pages = {342--351},
+ publisher = {[Wiley, International Biometric Society]},
+ title = {Marginalized Transition Models and Likelihood Inference for Longitudinal Categorical Data},
+ urldate = {2024-03-21},
+ volume = {58},
+ year = {2002}
+}
+

@@ -37,6 +37,10 @@ data.comp <-
   mutate(
     observed = as.numeric(!is.na(mem_comp)),
     day_fct = factor(day, levels = c(0,5,19,90))
-  )
+  ) %>% 
+  arrange(subject_id, day) %>% 
+  group_by(subject_id) %>% 
+  mutate(baseline_mem_comp = first(mem_comp)) %>% 
+  mutate(mem_comp_delta = mem_comp - baseline_mem_comp, na.rm = T)
 ```
 

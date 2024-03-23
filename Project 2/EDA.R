@@ -1,19 +1,19 @@
-## ----setup, include=FALSE--------------------------------------------------------------------------------
+## ----setup, include=FALSE-------------------------------------------------------------------
 knitr::opts_chunk$set(echo = TRUE)
 
 
-## --------------------------------------------------------------------------------------------------------
+## -------------------------------------------------------------------------------------------
 source(knitr::purl("./data_manipulation.Rmd", quiet=TRUE))
 theme_set(theme_bw())
 library(tidyverse)
 library(patchwork)
 
 
-## --------------------------------------------------------------------------------------------------------
+## -------------------------------------------------------------------------------------------
 table(data.full$treatment_group, data.full$day)
 
 
-## ----eda-traj--------------------------------------------------------------------------------------------
+## ----eda-traj-------------------------------------------------------------------------------
 traj.plot<-
 data.full %>% 
   ggplot(aes(x = day_fct, y = mem_comp)) +
@@ -41,7 +41,19 @@ traj.boxplot
 ggsave("./plots/trajectory_plot.jpg", traj.plot+traj.boxplot, width = 24, height = 12, dpi = 300)
 
 
-## ----eda-traj-comp-drop----------------------------------------------------------------------------------
+## ----traj_change----------------------------------------------------------------------------
+data.comp %>% 
+  filter(day > 0) %>% 
+  ggplot(aes(x = day_fct, y = mem_comp_delta)) +
+  geom_line(alpha = 0.3, linewidth = 0.5, aes(group = subject_id, color = treatment_group)) +
+  facet_grid(.~treatment_group) + 
+  geom_smooth(color="blue", method="lm", aes(group = 1), se = FALSE) +
+  ylab("Change of composite memory score")+
+  xlab("Days of observation")+
+  theme(legend.position = "none")
+
+
+## ----eda-traj-comp-drop---------------------------------------------------------------------
 mean.score.plot <-
 data.comp %>% 
   group_by(subject_id) %>% 
@@ -65,7 +77,31 @@ mean.score.plot
 ggsave("./plots/mean_score_plot.jpg", mean.score.plot, width = 12, height = 8, dpi = 300)
 
 
-## --------------------------------------------------------------------------------------------------------
+## ----eda-traj-change-comp-drop--------------------------------------------------------------
+mean.change.score.plot <-
+data.comp %>% 
+  group_by(subject_id) %>% 
+  mutate(total_obs = sum(as.numeric(observed))) %>% 
+  ungroup() %>% 
+  mutate(type = as.factor(ifelse(total_obs == 4, "Completer", "Drop-out"))) %>% 
+  group_by(type, day_fct, treatment_group) %>% 
+  mutate(mean_mem_comp_change = mean(mem_comp_delta,na.rm = T)) %>% 
+  dplyr::select(day_fct, treatment_group, type, mean_mem_comp_change) %>% 
+  distinct() %>% 
+  ungroup() %>% 
+  filter(day_fct != 0) %>% 
+  ggplot(aes(x = day_fct, y = mean_mem_comp_change, group = interaction(treatment_group, type), color = treatment_group, linetype = type)) +
+  geom_line(alpha = 0.8, size = 0.5) +
+  scale_linetype_manual(values = c("Completer" = "solid", "Drop-out" = "dashed")) +
+  labs(color = "Treatment Group", linetype = "Type") +
+  ylab("Mean Change of composite memory score")+
+  xlab("Days of observation")+
+  theme_bw()
+
+mean.change.score.plot
+
+
+## -------------------------------------------------------------------------------------------
 mean.score.boxplot <-
 data.comp %>% 
   group_by(subject_id) %>% 
@@ -83,7 +119,7 @@ mean.score.boxplot
 ggsave("./plots/mean_score_boxplot.jpg", mean.score.boxplot, width = 12, height = 8, dpi = 300)
 
 
-## --------------------------------------------------------------------------------------------------------
+## -------------------------------------------------------------------------------------------
 library(survival)
 library(ggsurvfit)
 library(survminer)
@@ -96,7 +132,8 @@ data.surv <-
   dplyr::select(-observed) %>% 
   mutate(stop = as.numeric(day_fct)-1) %>% 
   group_by(subject_id) %>% 
-  mutate(start = lag(stop)) %>% 
+  mutate(start = lag(stop), 
+         just_dropped = ifelse(dropped == 0 & lag(dropped) == 1,1,0)) %>% 
   drop_na(start)
 
 surv_object <- Surv(data.surv$start, data.surv$stop, data.surv$dropped)
@@ -136,7 +173,7 @@ table(data.full$treatment_group, data.full$day) %>% as.data.frame() %>%
   geom_step(direction = "vh") + 
   geom_point()
 
-## --------------------------------------------------------------------------------------------------------
+## -------------------------------------------------------------------------------------------
 data.comp %>%
   ggplot(aes(x = day_fct, y = mem_comp)) +
   naniar::geom_miss_point()+
