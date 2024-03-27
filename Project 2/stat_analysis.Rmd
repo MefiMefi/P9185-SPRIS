@@ -85,7 +85,7 @@ model.complete.1.tbl <- tbl_regression(model.complete.1,label = list(
       `day_fct:treatment_group` ~ "Days*Treatment"
     )) %>% 
   modify_header(
-  update = list(p.value = "p-value", ci = "95% CI", label = "Characteristics", estimate = "Beta")
+  update = list(p.value = "p-value", ci = "$95\\%$ CI", label = "Characteristics", estimate = "$\\widehat\\beta$")
   ) 
 model.complete.2.tbl <- tbl_regression(model.complete.2,label = list(
       day_fct ~ "Days",
@@ -95,7 +95,7 @@ model.complete.2.tbl <- tbl_regression(model.complete.2,label = list(
       `day_fct:treatment_group` ~ "Days*Treatment"
     )) %>% 
   modify_header(
-  update = list(p.value = "p-value", ci = "95% CI", label = "Characteristics", estimate = "Beta")
+  update = list(p.value = "p-value", ci = "$95\\%$ CI", label = "Characteristics", estimate = "$\\widehat\\beta$")
   ) 
 model.complete.3.tbl <- tbl_regression(model.complete.3,label = list(
       day_fct ~ "Days",
@@ -105,7 +105,7 @@ model.complete.3.tbl <- tbl_regression(model.complete.3,label = list(
       `day_fct:treatment_group` ~ "Days*Treatment"
     )) %>% 
   modify_header(
-  update = list(p.value = "p-value", ci = "95% CI", label = "Characteristics", estimate = "Beta")
+  update = list(p.value = "p-value", ci = "$95\\%$ CI", label = "Characteristics", estimate = "$\\widehat\\beta$")
   ) 
 
 model.complete.tbl <-
@@ -117,39 +117,37 @@ writeLines(as.character(model.complete.tbl), "complete_case_gee.tex")
 
 ## Modeling change of delta memory score
 ```{r model-complete-case-gee-delta}
-model.complete.delta.1 <- geeglm(mem_comp_delta ~ day_fct + treatment_group + age + gender + treatment_group * day_fct, data = data.comp %>% filter(type=="Completer", day > 0) %>% mutate(day_fct = factor(day_fct, levels = c(5,19,90))), family = gaussian, id = subject_id, corstr = "independence")
-model.complete.delta.2 <- geeglm(mem_comp_delta ~ day_fct + treatment_group + age + gender + treatment_group * day_fct, data = data.comp %>% filter(type=="Completer", day > 0) %>% mutate(day_fct = factor(day_fct, levels = c(5,19,90))), family = gaussian, id = subject_id,  corstr = "ar1")
-model.complete.delta.3 <- geeglm(mem_comp_delta ~ day_fct + treatment_group + age + gender + treatment_group * day_fct, data = data.comp %>% filter(type=="Completer", day > 0) %>% mutate(day_fct = factor(day_fct, levels = c(5,19,90))), family = gaussian, id = subject_id, corstr = "exchangeable")
+model.complete.delta.1 <- geeglm(mem_comp_delta ~ day_fct + treatment_group + age + gender , data = data.comp %>% filter(type=="Completer", day > 0) %>% mutate(day_fct = factor(day_fct, levels = c(5,19,90))), family = gaussian, id = subject_id, corstr = "independence")
+model.complete.delta.2 <- geeglm(mem_comp_delta ~ day_fct + treatment_group + age + gender , data = data.comp %>% filter(type=="Completer", day > 0) %>% mutate(day_fct = factor(day_fct, levels = c(5,19,90))), family = gaussian, id = subject_id,  corstr = "ar1")
+model.complete.delta.3 <- geeglm(mem_comp_delta ~ day_fct + treatment_group + age + gender, data = data.comp %>% filter(type=="Completer", day > 0) %>% mutate(day_fct = factor(day_fct, levels = c(5,19,90))), family = gaussian, id = subject_id, corstr = "exchangeable")
+
 
 model.complete.delta.1.tbl <- tbl_regression(model.complete.delta.1,label = list(
       day_fct ~ "Days",
       treatment_group ~ "Treatment",
       age ~ "Age",
-      gender ~ "Gender",
-      `day_fct:treatment_group` ~ "Days*Treatment"
-    )) %>% 
-  modify_header(
-  update = list(p.value = "p-value", ci = "95% CI", label = "Characteristics", estimate = "Beta")
-  ) 
+      gender ~ "Gender"
+      #`day_fct:treatment_group` ~ "Days*Treatment"
+    )) %>% modify_header(list(p.value = "p-value", ci = "$95\\%$ CI", label = "Characteristics", estimate = "$\\widehat\\beta$")) 
 model.complete.delta.2.tbl <- tbl_regression(model.complete.delta.2,label = list(
       day_fct ~ "Days",
       treatment_group ~ "Treatment",
       age ~ "Age",
-      gender ~ "Gender",
-      `day_fct:treatment_group` ~ "Days*Treatment"
+      gender ~ "Gender"
+      #`day_fct:treatment_group` ~ "Days*Treatment"
     )) %>% 
   modify_header(
-  update = list(p.value = "p-value", ci = "95% CI", label = "Characteristics", estimate = "Beta")
+  update = list(p.value = "p-value", ci = "$95\\%$ CI", label = "Characteristics", estimate = "$\\widehat\\beta$")
   ) 
 model.complete.delta.3.tbl <- tbl_regression(model.complete.delta.3,label = list(
       day_fct ~ "Days",
       treatment_group ~ "Treatment",
       age ~ "Age",
-      gender ~ "Gender",
-      `day_fct:treatment_group` ~ "Days*Treatment"
+      gender ~ "Gender"
+      #`day_fct:treatment_group` ~ "Days*Treatment"
     )) %>% 
   modify_header(
-  update = list(p.value = "p-value", ci = "95% CI", label = "Characteristics", estimate = "Beta")
+  update = list(p.value = "p-value", ci = "$95\\%$ CI", label = "Characteristics", estimate = "$\\widehat\\beta$")
   ) 
 
 model.complete.delta.tbl <-
@@ -185,12 +183,12 @@ data.comp.lag <-
   mutate(just_dropped = ifelse((drop == 1 & lag(drop) == 0) | (drop == 1 & is.na(lag(drop))) , 1, 0)) %>% 
   ungroup()
 model.drop <-
-  geeglm(just_dropped ~ day_fct + treatment_group + age + gender + mem_comp_lag, data = data.comp.lag, family = binomial, id = subject_id, corstr = "independence")
+  geeglm(just_dropped ~ day_fct + treatment_group + age + gender, data = data.comp.lag, family = binomial, id = subject_id, corstr = "independence")
 
 tbl_regression(model.drop, exponentiate = F)
 
 model.drop <-
-  geeglm(just_dropped ~ day_fct + treatment_group + age + gender + mem_comp_delta_lag, data = data.comp.lag, family = binomial, id = subject_id, corstr = "independence")
+  geeglm(just_dropped ~ day_fct + treatment_group + age + gender, data = data.comp.lag, family = binomial, id = subject_id, corstr = "independence")
 
 tbl_regression(model.drop, exponentiate = F)
 ```
@@ -250,7 +248,7 @@ model.prob.drop.coxph.tbl <- tbl_regression(model.prob.drop.coxph, exponentiate 
       gender ~ "Gender"
     )) %>% 
   modify_header(
-  update = list(p.value = "p-value", ci = "95% CI", label = "Characteristics", estimate = "HR")
+  update = list(p.value = "p-value", ci = "$95\\%$ CI", label = "Characteristics", estimate = "HR")
   )  %>% as_kable(booktabs = T, format = "latex",escape = FALSE) %>%  kable_styling(latex_options = c("hold_position"))
 
 writeLines(as.character(model.prob.drop.coxph.tbl), "ps_cox_model.tex")
@@ -290,7 +288,7 @@ model.ipw.1.tbl <- tbl_regression(model.ipw.1,label = list(
       `day_fct:treatment_group` ~ "Days*Treatment"
     )) %>% 
   modify_header(
-  update = list(p.value = "p-value", ci = "95% CI", label = "Characteristics", estimate = "OR")
+  update = list(p.value = "p-value", ci = "$95\\%$ CI", label = "Characteristics", estimate = "$\\widehat\\beta$")
   ) 
 model.ipw.2.tbl <- tbl_regression(model.ipw.2,label = list(
       day_fct ~ "Days",
@@ -300,7 +298,7 @@ model.ipw.2.tbl <- tbl_regression(model.ipw.2,label = list(
       `day_fct:treatment_group` ~ "Days*Treatment"
     )) %>% 
   modify_header(
-  update = list(p.value = "p-value", ci = "95% CI", label = "Characteristics", estimate = "OR")
+  update = list(p.value = "p-value", ci = "$95\\%$ CI", label = "Characteristics", estimate = "$\\widehat\\beta$")
   ) 
 model.ipw.3.tbl <- tbl_regression(model.ipw.3,label = list(
       day_fct ~ "Days",
@@ -310,7 +308,7 @@ model.ipw.3.tbl <- tbl_regression(model.ipw.3,label = list(
       `day_fct:treatment_group` ~ "Days*Treatment"
     )) %>% 
   modify_header(
-  update = list(p.value = "p-value", ci = "95% CI", label = "Characteristics", estimate = "OR")
+  update = list(p.value = "p-value", ci = "$95\\%$ CI", label = "Characteristics", estimate = "$\\widehat\\beta$")
   ) 
 
 model.ipw.tbl <-
@@ -322,39 +320,39 @@ writeLines(as.character(model.ipw.tbl), "ipw_gee.tex")
 
 Modeling change of memory score
 ```{r model-ipw-gee-coxph}
-model.ipw.coxph.1 <- geeglm(mem_comp_delta ~ day_fct + treatment_group + age + gender + treatment_group * day_fct, data = data.comp %>% filter(day > 0) %>% mutate(day_fct = factor(day_fct,levels = c(5,19,90))), family = gaussian, id = subject_id, corstr = "independence", weights = 1/prob.stay.coxph)
-model.ipw.coxph.2 <- geeglm(mem_comp_delta ~ day_fct + treatment_group + age + gender + treatment_group * day_fct, data = data.comp %>% filter(day > 0) %>% mutate(day_fct = factor(day_fct,levels = c(5,19,90))), family = gaussian, id = subject_id,  corstr = "ar1", weights = 1/prob.stay.coxph)
-model.ipw.coxph.3 <- geeglm(mem_comp_delta ~ day_fct + treatment_group + age + gender + treatment_group * day_fct, data = data.comp %>% filter(day > 0) %>% mutate(day_fct = factor(day_fct,levels = c(5,19,90))), family = gaussian, id = subject_id, corstr = "exchangeable", weights = 1/prob.stay.coxph)
+model.ipw.coxph.1 <- geeglm(mem_comp_delta ~ day_fct + treatment_group + age + gender , data = data.comp %>% filter(day > 0) %>% mutate(day_fct = factor(day_fct,levels = c(5,19,90))), family = gaussian, id = subject_id, corstr = "independence", weights = 1/prob.stay.coxph)
+model.ipw.coxph.2 <- geeglm(mem_comp_delta ~ day_fct + treatment_group + age + gender , data = data.comp %>% filter(day > 0) %>% mutate(day_fct = factor(day_fct,levels = c(5,19,90))), family = gaussian, id = subject_id,  corstr = "ar1", weights = 1/prob.stay.coxph)
+model.ipw.coxph.3 <- geeglm(mem_comp_delta ~ day_fct + treatment_group + age + gender , data = data.comp %>% filter(day > 0) %>% mutate(day_fct = factor(day_fct,levels = c(5,19,90))), family = gaussian, id = subject_id, corstr = "exchangeable", weights = 1/prob.stay.coxph)
 
 model.ipw.coxph.1.tbl <- tbl_regression(model.ipw.coxph.1,label = list(
       day_fct ~ "Days",
       treatment_group ~ "Treatment",
       age ~ "Age",
-      gender ~ "Gender",
-      `day_fct:treatment_group` ~ "Days*Treatment"
+      gender ~ "Gender"
+      #`day_fct:treatment_group` ~ "Days*Treatment"
     )) %>% 
   modify_header(
-  update = list(p.value = "p-value", ci = "95% CI", label = "Characteristics", estimate = "$\\hat\\beta$")
+  update = list(p.value = "p-value", ci = "$95\\%$ CI", label = "Characteristics", estimate = "$\\widehat\\beta$")
   ) 
 model.ipw.coxph.2.tbl <- tbl_regression(model.ipw.coxph.2,label = list(
       day_fct ~ "Days",
       treatment_group ~ "Treatment",
       age ~ "Age",
-      gender ~ "Gender",
-      `day_fct:treatment_group` ~ "Days*Treatment"
+      gender ~ "Gender"
+      #`day_fct:treatment_group` ~ "Days*Treatment"
     )) %>% 
   modify_header(
-  update = list(p.value = "p-value", ci = "95% CI", label = "Characteristics", estimate = "$\\hat\\beta$")
+  update = list(p.value = "p-value", ci = "$95\\%$ CI", label = "Characteristics", estimate = "$\\widehat\\beta$")
   ) 
 model.ipw.coxph.3.tbl <- tbl_regression(model.ipw.coxph.3,label = list(
       day_fct ~ "Days",
       treatment_group ~ "Treatment",
       age ~ "Age",
-      gender ~ "Gender",
-      `day_fct:treatment_group` ~ "Days*Treatment"
+      gender ~ "Gender"
+      #`day_fct:treatment_group` ~ "Days*Treatment"
     )) %>% 
   modify_header(
-  update = list(p.value = "p-value", ci = "95% CI", label = "Characteristics", estimate = "$\\hat\\beta$")
+  update = list(p.value = "p-value", ci = "$95\\%$ CI", label = "Characteristics", estimate = "$\\widehat\\beta$")
   ) 
 
 model.ipw.coxph.tbl <-

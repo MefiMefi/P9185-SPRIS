@@ -52,6 +52,7 @@ ggsave("./plots/trajectory_plot.jpg", traj.plot+traj.boxplot, width = 24, height
 
 
 ```{r traj_change}
+traj.change.plot <-
 data.comp %>% 
   filter(day > 0) %>% 
   ggplot(aes(x = day_fct, y = mem_comp_delta)) +
@@ -171,9 +172,10 @@ ggsurvplot(
   #risk.table.title = "",
   ncensor.plot = T,
   ncensor.plot.height = 0.5,
-  ncensor.plot.title = "",
+  ncensor.plot.title = "", 
   legend.title = "Treatment Group", # legend title
-  legend.labs = c("A", "B", "C")
+  legend.labs = c("A", "B", "C"),
+  tables.y.text = F
 )
 #stay.plot <- stay.plot$plot + scale_x_continuous(labels = c("0", "5", "19", "90"))
 

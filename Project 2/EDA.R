@@ -1,19 +1,19 @@
-## ----setup, include=FALSE-------------------------------------------------------------------
+## ----setup, include=FALSE-----------------------------------------------------
 knitr::opts_chunk$set(echo = TRUE)
 
 
-## -------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 source(knitr::purl("./data_manipulation.Rmd", quiet=TRUE))
 theme_set(theme_bw())
 library(tidyverse)
 library(patchwork)
 
 
-## -------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 table(data.full$treatment_group, data.full$day)
 
 
-## ----eda-traj-------------------------------------------------------------------------------
+## ----eda-traj-----------------------------------------------------------------
 traj.plot<-
 data.full %>% 
   ggplot(aes(x = day_fct, y = mem_comp)) +
@@ -41,7 +41,8 @@ traj.boxplot
 ggsave("./plots/trajectory_plot.jpg", traj.plot+traj.boxplot, width = 24, height = 12, dpi = 300)
 
 
-## ----traj_change----------------------------------------------------------------------------
+## ----traj_change--------------------------------------------------------------
+traj.change.plot <-
 data.comp %>% 
   filter(day > 0) %>% 
   ggplot(aes(x = day_fct, y = mem_comp_delta)) +
@@ -53,7 +54,7 @@ data.comp %>%
   theme(legend.position = "none")
 
 
-## ----eda-traj-comp-drop---------------------------------------------------------------------
+## ----eda-traj-comp-drop-------------------------------------------------------
 mean.score.plot <-
 data.comp %>% 
   group_by(subject_id) %>% 
@@ -77,7 +78,7 @@ mean.score.plot
 ggsave("./plots/mean_score_plot.jpg", mean.score.plot, width = 12, height = 8, dpi = 300)
 
 
-## ----eda-traj-change-comp-drop--------------------------------------------------------------
+## ----eda-traj-change-comp-drop------------------------------------------------
 mean.change.score.plot <-
 data.comp %>% 
   group_by(subject_id) %>% 
@@ -101,7 +102,7 @@ data.comp %>%
 mean.change.score.plot
 
 
-## -------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 mean.score.boxplot <-
 data.comp %>% 
   group_by(subject_id) %>% 
@@ -119,7 +120,7 @@ mean.score.boxplot
 ggsave("./plots/mean_score_boxplot.jpg", mean.score.boxplot, width = 12, height = 8, dpi = 300)
 
 
-## -------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 library(survival)
 library(ggsurvfit)
 library(survminer)
@@ -156,9 +157,10 @@ ggsurvplot(
   #risk.table.title = "",
   ncensor.plot = T,
   ncensor.plot.height = 0.5,
-  ncensor.plot.title = "",
+  ncensor.plot.title = "", 
   legend.title = "Treatment Group", # legend title
-  legend.labs = c("A", "B", "C")
+  legend.labs = c("A", "B", "C"),
+  tables.y.text = F
 )
 #stay.plot <- stay.plot$plot + scale_x_continuous(labels = c("0", "5", "19", "90"))
 
@@ -173,7 +175,7 @@ table(data.full$treatment_group, data.full$day) %>% as.data.frame() %>%
   geom_step(direction = "vh") + 
   geom_point()
 
-## -------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 data.comp %>%
   ggplot(aes(x = day_fct, y = mem_comp)) +
   naniar::geom_miss_point()+
