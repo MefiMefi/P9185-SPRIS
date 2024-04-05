@@ -1,0 +1,74 @@
+---
+title: "project3_analysis"
+author: "Ryan Wei"
+date: "2024-04-04"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(survival)
+library(ggsurvfit)
+library(survminer)
+```
+
+# Data Manipulation
+
+```{r}
+meno.dat <- read.table("./Menopause.dat",header = F)
+colnames(meno.dat) <- c("id", "intake_age", "menopause_age", "menopause", "race", "education")
+meno.dat$menopause_time <- meno.dat$menopause_age - meno.dat$intake_age
+```
+
+# A
+
+## I
+
+### Ia and Ib
+
+```{r}
+exp.fit <- survreg(Surv(menopause_time, menopause) ~ 1, data = meno.dat, dist = "exponential")
+km.fit <- survfit(Surv(menopause_time, menopause) ~ 1, data = meno.dat)
+
+summary(exp.fit)
+ggsurvplot(km.fit, data = meno.dat, pval.method = TRUE, conf.int = TRUE)
+```
+
+### II
+
+```{r}
+coxph.fit <- coxph(Surv(menopause_time, menopause) ~ race + education + intake_age, data = meno.dat)
+summary(coxph.fit)
+ph.test <- cox.zph(coxph.fit)
+ph.test
+ggcoxzph(ph.test)
+ggcoxdiagnostics(coxph.fit,
+ type = "schoenfeld")
+ggforest(coxph.fit)
+
+ggcoxfunctional(Surv(menopause_time, menopause) ~ intake_age + log(intake_age) + sqrt(intake_age), data = meno.dat)
+```
+
+# B
+
+
+## III
+
+
+```{r}
+km.fit.left <- survfit(Surv(intake_age, menopause_age, menopause) ~ 1, data = meno.dat)
+summary(km.fit.left)
+ggsurvplot(km.fit.left, data = meno.dat, pval.method = TRUE, conf.int = TRUE,)
+```
+
+
+```{r}
+km.fit.left.race <- survfit(Surv(intake_age, menopause_age, menopause) ~ race, data = meno.dat)
+ggsurvplot(km.fit.left.race, data = meno.dat, pval.method = TRUE, conf.int = TRUE)
+surv_summary(km.fit.left.race, data = meno.dat)
+```
+
