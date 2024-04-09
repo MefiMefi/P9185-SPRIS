@@ -10,10 +10,10 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-library(tidyverse)
-library(survival)
-library(ggsurvfit)
-library(survminer)
+pacman::p_load(tidyverse, plotly, shiny, scales, patchwork, DiagrammeR,
+               survival, KMsurv, flexsurv, eha, ctqr, cmprsk, mstate, ggsurvfit, survminer, 
+               Epi, epitools, gnm, splines)
+theme_set(theme_classic() + theme(legend.position = "bottom"))
 ```
 
 # Data Manipulation
@@ -26,32 +26,84 @@ meno.dat$menopause_time <- meno.dat$menopause_age - meno.dat$intake_age
 
 # A
 
-## I
-
-### Ia and Ib
 
 ```{r}
-exp.fit <- survreg(Surv(menopause_time, menopause) ~ 1, data = meno.dat, dist = "exponential")
-km.fit <- survfit(Surv(menopause_time, menopause) ~ 1, data = meno.dat)
-
-summary(exp.fit)
-ggsurvplot(km.fit, data = meno.dat, pval.method = TRUE, conf.int = TRUE)
+table(meno.dat$menopause)
 ```
+
+
+```{r}
+meno.dat %>% arrange(desc(intake_age)) %>% 
+  mutate(id_intake = 1:nrow(meno.dat)) %>% 
+ggplot(aes(x = intake_age, xend = menopause_age, y = id_intake, yend = id_intake)) +
+  geom_segment(color = "gray", alpha = 0.8, lineend = "butt") +  # Draw the line segments
+  geom_point(aes(x = menopause_age, color = factor(menopause), shape = factor(menopause)), size = 1, show.legend = T) +  
+  scale_color_manual(values = c("1", "2")) +  # Red for 0, green for 1
+  scale_shape_manual(values = c(1,4)) +
+  labs(x = "Age (years)", y = "Individuals", color = "Menopause", shape = "Menopause") +
+  theme_bw() +
+  theme(legend.position = "right")
+```
+
+```{r}
+meno.dat %>% arrange(desc(intake_age)) %>% 
+  mutate(id_intake = 1:nrow(meno.dat)) %>% 
+ggplot(aes(x =0, xend = menopause_time, y = id_intake, yend = id_intake)) +
+  geom_segment(color = "gray", alpha = 0.8, lineend = "butt") +  # Draw the line segments
+  geom_point(aes(x = menopause_time, color = factor(menopause), shape = factor(menopause)), size = 1, show.legend = T) +  
+  scale_color_manual(values = c("1", "2")) +  # Red for 0, green for 1
+  scale_shape_manual(values = c(1,4)) +
+  labs(x = "Time to menopause (years)", y = "Individuals", color = "Menopause", shape = "Menopause") +
+  theme_bw() +
+  theme(legend.position = "right")
+```
+
+## I
+
+### Ia 
+
+```{r}
+exp.fit <- flexsurvreg(Surv(menopause_time, menopause) ~ 1, data = meno.dat, dist = "exponential")
+exp.fit
+print(exp.fit)
+log(2)/exp(coef(exp.fit))
+ggsurvplot(exp.fit, xlab = "Time to menopause (years)", censor = F)
+```
+
+### Ib
+
+```{r}
+km.fit <- survfit(Surv(menopause_time, menopause) ~ 1, data = meno.dat)
+ggsurvplot(km.fit, data = meno.dat, conf.int = TRUE, risk.table = T) 
+print(km.fit)
+```
+```{r}
+wrap_plots(
+  ggsurvfit(km.fit, type = "risk") + add_confidence_interval(),
+  ggsurvfit(km.fit, type = "cumhaz") + add_confidence_interval()
+)
+```
+
 
 ### II
 
 ```{r}
 coxph.fit <- coxph(Surv(menopause_time, menopause) ~ race + education + intake_age, data = meno.dat)
 summary(coxph.fit)
+
+ggforest(coxph.fit)
+
+ggcoxfunctional(Surv(menopause_time, menopause) ~ intake_age + log(intake_age) + sqrt(intake_age), data = meno.dat)
+```
+
+```{r}
 ph.test <- cox.zph(coxph.fit)
 ph.test
 ggcoxzph(ph.test)
 ggcoxdiagnostics(coxph.fit,
  type = "schoenfeld")
-ggforest(coxph.fit)
-
-ggcoxfunctional(Surv(menopause_time, menopause) ~ intake_age + log(intake_age) + sqrt(intake_age), data = meno.dat)
 ```
+
 
 # B
 
