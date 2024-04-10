@@ -97,6 +97,19 @@ ggforest(coxph.fit)
 ggcoxfunctional(Surv(menopause_time, menopause) ~ intake_age + log(intake_age) + sqrt(intake_age), data = meno.dat)
 ```
 
+
+
+```{r}
+# graphical method
+km.fit.race <- survfit(Surv(menopause_time, menopause) ~ race, data = meno.dat)
+km.fit.educ <- survfit(Surv(menopause_time, menopause) ~ education, data = meno.dat)
+cloglog.race <- ggsurvplot(km.fit.race, data = meno.dat, fun = "cloglog", legend.labs = c("White, non-Hispanic", "Black, non-Hispanic", "Other Ethnicity"), legend.title = "Race") 
+cloglog.race$plot
+
+cloglog.educ <- ggsurvplot(km.fit.educ, data = meno.dat, fun = "cloglog", legend.labs = c("Post-Graduate", "College Graduate", "Some College", "High School Education(or less)"), legend.title = "Education") 
+cloglog.educ$plot
+```
+
 ```{r}
 ph.test <- cox.zph(coxph.fit)
 ph.test
@@ -188,12 +201,12 @@ ggadjustedcurves(coxph.fit.race.educ, data = data.frame(race = c(0), education =
 
 ```{r}
 # graphical method
-cloglog.race <- ggsurvplot(km.fit.left.race, data = meno.dat, fun = "cloglog", xlim = c(40, 80), legend.labs = c("White, non-Hispanic", "Black, non-Hispanic", "Other Ethnicity"), legend.title = "Race") 
-cloglog.race$plot
+cloglog.race.left <- ggsurvplot(km.fit.left.race, data = meno.dat, fun = "cloglog", xlim = c(40, 80), legend.labs = c("White, non-Hispanic", "Black, non-Hispanic", "Other Ethnicity"), legend.title = "Race") 
+cloglog.race.left$plot
 km.fit.left.educ <- survfit(Surv(intake_age, menopause_age, menopause) ~ as.factor(education), data = meno.dat)
 
-cloglog.educ <- ggsurvplot(km.fit.left.educ, data = meno.dat, fun = "cloglog", xlim = c(40, 80), legend.labs = c("Post-Graduate", "College Graduate", "Some College", "High School Education(or less)"), legend.title = "Education") 
-cloglog.educ$plot
+cloglog.educ.left <- ggsurvplot(km.fit.left.educ, data = meno.dat, fun = "cloglog", xlim = c(40, 80), legend.labs = c("Post-Graduate", "College Graduate", "Some College", "High School Education(or less)"), legend.title = "Education") 
+cloglog.educ.left$plot
 ```
 
 ```{r}
