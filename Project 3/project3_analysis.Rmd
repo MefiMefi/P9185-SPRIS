@@ -22,6 +22,7 @@ theme_set(theme_classic() + theme(legend.position = "bottom"))
 meno.dat <- read.table("./Menopause.dat",header = F)
 colnames(meno.dat) <- c("id", "intake_age", "menopause_age", "menopause", "race", "education")
 meno.dat$menopause_time <- meno.dat$menopause_age - meno.dat$intake_age
+meno.dat$truncated <- ifelse(meno.dat$menopause == 1 & meno.dat$menopause_time <= 1, 1, 0)
 ```
 
 # A
@@ -107,6 +108,19 @@ ggcoxdiagnostics(coxph.fit,
 
 # B
 
+```{r}
+# km-fit by truncated or not
+km.fit.trunc <- survfit(Surv(menopause_time, menopause) ~ truncated, data = meno.dat)
+ggsurvplot(km.fit.trunc, data = meno.dat, conf.int = TRUE, risk.table = T) 
+print(km.fit.trunc)
+```
+
+```{r}
+# km-fit by truncated or not
+km.fit.trunc.2 <- survfit(Surv(intake_age, menopause_age, menopause) ~ truncated, data = meno.dat)
+ggsurvplot(km.fit.trunc.2, data = meno.dat, conf.int = TRUE, risk.table = T) 
+print(km.fit.trunc.2)
+```
 
 ## III
 
@@ -117,10 +131,76 @@ summary(km.fit.left)
 ggsurvplot(km.fit.left, data = meno.dat, pval.method = TRUE, conf.int = TRUE,)
 ```
 
+### IV
 
 ```{r}
 km.fit.left.race <- survfit(Surv(intake_age, menopause_age, menopause) ~ race, data = meno.dat)
-ggsurvplot(km.fit.left.race, data = meno.dat, pval.method = TRUE, conf.int = TRUE)
-surv_summary(km.fit.left.race, data = meno.dat)
+ggsurvplot(km.fit.left.race, data = meno.dat, pval.method = TRUE, conf.int = TRUE, censor = F, legend.labs = c("White, non-Hispanic", "Black, non-Hispanic", "Other Ethnicity"), legend.title = "Race")
+#surv_summary(km.fit.left.race, data = meno.dat)
+```
+
+
+```{r}
+coxph.fit.race <- coxph(Surv(intake_age, menopause_age, menopause) ~ as.factor(race), data = meno.dat)
+
+summary(coxph.fit.race)
+```
+
+### V
+
+#### Va
+
+Model: $h(t\mid \mathbf{X}_i) = h_0(t)\exp\left\{\beta_1\mathbf{I}(\text{race} = \text{Black, non-Hispanic})+ \beta_2\mathbf{I}(\text{race} = \text{Other Ethnicity}) + \beta_3\mathbf{I}(\text{education} = \text{College Graduate}) + \beta_4\mathbf{I}(\text{education} = \text{College}) + \beta_5\mathbf{I}(\text{education} = \text{High School Education (or less)}) \right\}$
+
+```{r}
+coxph.fit.race.educ<- coxph(Surv(intake_age, menopause_age, menopause) ~ as.factor(race) + as.factor(education), data = meno.dat)
+
+summary(coxph.fit.race.educ)
+```
+
+#### Vb
+
+```{r}
+beta.diff.b.vs.o <- coef(coxph.fit.race.educ)[[1]]-coef(coxph.fit.race.educ)[[2]]
+rr.b.vs.o <- exp(beta.diff.b.vs.o)
+
+vcov.cox.race.educ <- vcov(coxph.fit.race.educ)
+
+beta.diff.se <- sqrt(vcov.cox.race.educ['as.factor(race)1', 'as.factor(race)1'] + vcov.cox.race.educ['as.factor(race)2', 'as.factor(race)2'] - 2 * vcov.cox.race.educ['as.factor(race)1', 'as.factor(race)2'])
+
+CI.beta.diff.L <- beta.diff.b.vs.o - 1.96 * beta.diff.se 
+CI.beta.diff.U <- beta.diff.b.vs.o + 1.96 * beta.diff.se
+
+CI.rr.L <- exp(CI.beta.diff.L)
+CI.rr.U <- exp(CI.beta.diff.U)
+```
+
+#### Vc
+
+```{r}
+base.haz.race.educ <- basehaz(coxph.fit.race.educ, centered = FALSE)
+
+ggadjustedcurves(coxph.fit.race.educ, data = data.frame(race = c(0), education = c(0)), method = "single") +
+  theme(legend.position = "none")
+```
+
+#### Vd
+
+```{r}
+# graphical method
+cloglog.race <- ggsurvplot(km.fit.left.race, data = meno.dat, fun = "cloglog", xlim = c(40, 80), legend.labs = c("White, non-Hispanic", "Black, non-Hispanic", "Other Ethnicity"), legend.title = "Race") 
+cloglog.race$plot
+km.fit.left.educ <- survfit(Surv(intake_age, menopause_age, menopause) ~ as.factor(education), data = meno.dat)
+
+cloglog.educ <- ggsurvplot(km.fit.left.educ, data = meno.dat, fun = "cloglog", xlim = c(40, 80), legend.labs = c("Post-Graduate", "College Graduate", "Some College", "High School Education(or less)"), legend.title = "Education") 
+cloglog.educ$plot
+```
+
+```{r}
+ph.test.race.educ <- cox.zph(coxph.fit.race.educ)
+ph.test.race.educ
+ggcoxzph(ph.test.race.educ) + ylab("Residuals")
+ggcoxdiagnostics(coxph.fit.race.educ,
+ type = "scaledsch")
 ```
 
