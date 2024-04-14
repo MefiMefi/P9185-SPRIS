@@ -147,7 +147,7 @@ summary(km.fit.left)
 km.fit.left
 km.fit.ignore.left <- survfit(Surv(menopause_age, menopause) ~ 1, data = meno.dat)
 
-km.left.plot <- ggsurvplot(km.fit.left, data = meno.dat, pval.method = TRUE, conf.int = TRUE)
+km.left.plot <- ggsurvplot(km.fit.left, data = meno.dat, pval.method = TRUE, conf.int = TRUE, risk.table = T)
 km.ignore.left.plot <- ggsurvplot(km.fit.ignore.left, data = meno.dat, pval.method = TRUE, conf.int = TRUE)
 
 ggsurvplot(list("Ingore left-truncation" = km.fit.ignore.left, "Consider left-truncation" = km.fit.left), data = meno.dat, combine = T, legend.labs = c("Ignore truncation", "Consider truncation"), legend.title = "Type")$plot 
@@ -344,7 +344,7 @@ summary(coxph.fit.race.educ)
 
 coxph.fit.educ <- coxph(Surv(intake_age, menopause_age, menopause) ~ education, data = meno.dat)
 anova(coxph.fit.race.educ, coxph.fit.educ)
-
+anova(coxph.fit.race.educ, coxph.fit.race)
 ggforest(coxph.fit.race.educ, data = meno.dat)
 ```
 
@@ -373,6 +373,7 @@ base.haz.race.educ <- basehaz(coxph.fit.race.educ, centered = FALSE)
 
 surv_adjustedcurves(coxph.fit.race.educ, data = data.frame(race = as.factor(0), education = as.factor(0)), method = "single")
 ggadjustedcurves(coxph.fit.race.educ, data = data.frame(race = as.factor(0), education = as.factor(0)), method = "single", reference = meno.dat[meno.dat$race == 1,]) + scale_x_continuous(breaks = seq(0, 60, 10))
+survfit(coxph.fit.race.educ, newdata = data.frame(race = as.factor(0), education = as.factor(0)))
 ```
 
 #### Vd
@@ -395,3 +396,7 @@ ggcoxdiagnostics(coxph.fit.race.educ,
  type = "scaledsch")
 ```
 
+
+Notes: Add assumptions into the report, ph assumptions, 
+Handling left-truncation, remove participants with intake_age less than t_i out of the risk set
+compare whether the parametric model is a good fit

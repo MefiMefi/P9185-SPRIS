@@ -1,0 +1,74 @@
+---
+title: "Project3"
+author: "Ryan Wei  UNI: rw2844"
+output: 
+  bookdown::pdf_document2:
+    toc: no
+    collapsed: no
+    theme: readable
+    citation_package: natbib
+bibliography: ["project2.bib"]
+biblio-style: "apalike"
+link-citations: true
+geometry: "margin=1in"
+fontsize: 12pt
+linestretch: 1.5
+header-includes:
+  - \usepackage{appendix}
+---
+
+# Introduction
+
+Menopause is ascertained when a woman has had no menstrual periods for 12 consecutive months. Henceforth this ascertained menopause will be the condition of interest of this study and will be referred to simply as menopause.
+
+# Method
+
+## Study Design
+
+The data set contains longitudinal information about 380 women who have not had a hysterectomy and have not experienced menopause before intake (recruitment). All 380 women were followed over time until they experienced menopause, died, or were censored due to either the woman dropping out or the study ending. Patient's age (in years) when the patient was recruited into the study was recorded (`intake_age`), as well as patient's menopause age (in years) or censoring age (in years), recorded as `menopause_age`. A binary indicator `menopause` is used to record whether or not a patient was observed to experience menopause, with `menopause = 1` if patient was observed to experience menopause and `menopause = 0` if patient was censored at `menopause_age`. Baseline demographic characters were also recorded. Patient's ethnicity was recorded as `race` with `race = 0` for White non-Hispanic patient; `race = 1` for Black, non-Hispanic patient; `race = 2` for Other Ethnicity patient. Patient's education level was recorded as `education` with `education = 0` if patient had Post-graduate education; `education = 1` if patient had Collage Graduate education; `education = 2` if patient had Some Collage education; `education = 3` if patient had High School Education (or less) education.
+
+## Research Interests
+
+We seek to understand which exposure(s) might influence event time in this population. There were 75 women who experienced menopause during the follow-up time. Specifically, we are interested in two kinds of event time: 1) Menopause time, defined as `menopause_time = menopause_age - intake_age`, which is the duration from the enrollment to the event or the censoring. 2) Menopause age: the age of patient when she experienced the event or the censoring.
+
+## Statistical Analysis
+
+### Survival Data
+
+We first introduce the notations used in the study. context whether the censoring time is random or fixed.
+In right censoring, it is convenient to use the following notation. For a specific individual $i$ under study, we assume that there is a true menopause age $Y_i$ and a fixed censoring time, $C_i$ ( $C_i$ for "right" censoring time). The $Y$ 's are assumed to be independent and identically distributed with probability density function $f(Y_i)$ and survival function $S(Y_i)$, where $S(t) = \int_0^tf(y)dy$. The exact menopause age $Y$ of an individual will be known if, and only if, $Y_i$ is less than or equal to $C_i$. If $Y_i$ is greater than $C_i$, the individual is a survivor, and her event menopause time is censored at $C_i$. The data from this study can be conveniently represented by pairs of random variables $(T_i, \delta_i)$, where $\delta_i$ indicates whether the menopause age $Y_i$ corresponds to an event $(\delta_i=1)$ or is censored $(\delta_i=0)$, and $T_i$ is equal to $Y_i$, if the menopause age is observed, and to $C_i$ if it is censored, i.e., $T_i=\min \left(Y_i, C_i\right)$. 
+
+### Left Truncation
+
+Since the event of interest for this study is menopause, subject will be enrolled in this study after a certain age. This is an unique nature of our data, which is left-truncated and right-censored. To deal with the left truncation, let $X_i$ denotes the left truncation time, which is the intake age in this study. We can observe $Y_i$ if and only if $X_i\le Y_i$. We considered two ways to account for the left-truncated nature of our data. One way is to create the menopause time, denoted as $Z_i = \min \left(Y_i - X_i, C_i - X_i\right)$, the duration from the subject entered the study to the occurrence of the event or censoring, then conduct analyses on this new event time. Another way is analyzing $T_i$ directly by accounting for the left truncation. Specifically, we assume assume that menopause age $Y_i$ and intake age $X_i$ are quasi-independent, i.e. the joint pdf $f(x, y)$ of $(X_i,Y_i)$ can be written as $f(x, y) = Cf(y)g(x)$ for $y>x$, and $0$ otherwise, where $f$ and $g$ are two density functions and $C$ is a constant that makes $f(x,y)$ a genuine bivariate density function. 
+
+### Non-parametric Methods
+
+For the non-parametric estimator of the survival function, we adopted the standard Kaplan-Meier estimator of the survival function, proposed by Kaplan and Meier (1958), is called the Product-Limit estimator. This estimator is defined as follows for all values of $t$ in the range where there is data:
+$$
+\hat{S}(t)=\left\{\begin{array}{ll}
+1 & \text { if } t<t_j, \\
+\prod_{t_j \leq t}\left[1-\frac{d_j}{n_j}\right], & \text { if } t_j \leq t
+\end{array} .\right.
+$$
+where $t_j$'s, $j  = 1,2,\ldots, D$ are the distinct event time observed in the data. $n_j$'s are the number of subjects at risk at time $t$. For the analyses of the menopause time $Z_i$, $n_j$ is the number of subjects who hadn't experienced menopause or the censoring just before $t_j$. For the analyses of the menopause age $Y_i$, $n_j$ is the number of subjects who hadn't experienced menopause or the censoring just before $t_j$ and the subject had been enrolled in the study, i.e., $X_i \ge t_j$. $d_j$'s are the number of subjects who experience the event at time $t_j$.
+
+The variance of the Product-Limit estimator is estimated by Greenwood's formula:
+$$
+\hat{V}[\hat{S}(t)]=\hat{S}(t)^2 \sum_{t_j \leq t} \frac{d_j}{n_j\left(n_j-d_j\right)} .
+$$
+
+We adopted the so-called log-rank test to test whether there exists a difference in survival distributions between different strata defined by some covariates. For this study, we particularly interested in testing whether there are any differences in the survival distributions between different ethnicity groups. Let $k = 0,1,2$ denotes the index for White, non-Hispanic, Black, non-Hispanic and Other Ethnicity patient groups. We can write the above hypothesis as $H_0: S_0(t)=S_1(t)=S_2(t)$ versus $H_1$ : at least one of the sub-group survival function is different from others. Here $S_k(t)$'s are the subgroup's survival functions. Then, the log-rank test statistic can be written as 
+$$\chi^2=\left(Z_1\left(t_D\right), Z_2\left(t_D\right), Z_3\left(t_D\right)\right) \Sigma^{-1}\left(Z_1\left(t_D\right), Z_2\left(t_D\right), Z_3\left(t_D\right)\right)^T,$$ where $Z_k\left(t_D\right)=\sum_{j=1}^D W\left(t_j\right)\left[d_{j k}-n_{j k}\left(\frac{d_j}{n_j}\right)\right], k=1,2,3, j = 1,\ldots,D$, here $W\left(t_j\right) \equiv 1$ for all $t_j$, which means we are giving equal weights to all event time. $d_{jk}$ and $n_{jk}$ are the number of event at time $t_j$ and number of subjects at risk right before $t_j$ for subgroup $k$, respectively. $\Sigma$ is the variance covariance matrix of $\left(Z_1\left(t_D\right), Z_2\left(t_D\right), Z_3\left(t_D\right)\right)^T$, its components is estimated by $\widehat{\sigma}^2_{kk}=\sum_{j=1}^D W\left(t_j\right)^2 \frac{n_{j k}}{n_j}\left(1-\frac{n_{j k}}{n_j}\right)\left(\frac{n_j-d_j}{n_j-1}\right) d_j$ and $\widehat{\sigma}^2_{k g}=-\sum_{j=1}^D W\left(t_j\right)^2 \frac{n_{j k}}{n_j} \frac{n_{j g}}{n_j}\left(\frac{n_j-d_j}{n_j-1}\right) d_j, g = 1,2,3,g \neq j$. The test statistic follows a $\chi^2$ distribution with degrees of freedom equal to $2$. We reject the null hypothesis $H_0$ at an $\alpha$ level when $\chi^2$ is larger than the $\alpha$-th upper percentile of $\chi^2_2$.
+
+### Parametric Methods
+
+For the parametric estimator of the survival function,
+
+### Semi-parametirc Methods
+
+
+# Result
+
+# Discussion
+# Appendix {-}
