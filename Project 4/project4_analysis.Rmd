@@ -16,6 +16,9 @@ library(survminer)
 library(patchwork)
 library(lme4)
 library(nlme)
+library(geepack)
+library(gee)
+library(glmtoolbox)
 ```
 
 
@@ -120,9 +123,16 @@ long.dat <- readxl::read_excel("./Q2b.xlsx")
 baseline.dat <- readxl::read_excel("./Q2b_BL.xlsx")
 
 long.dat <- left_join(long.dat, baseline.dat, by = "ID") %>% 
-  mutate(SAE = if_else(SAE == 0, 0, 1))
+  mutate(OBS = if_else(is.na(SAE), 0, 1)) %>% 
+  mutate(TIME = as.factor(TIME),
+         GROUP = as.factor(GROUP),
+         SITE = as.factor(SITE),
+         SEX = as.factor(SEX),
+         SAE = as.factor(SAE))
 
-glmm.fit <- glmer()
+glmm.fit <- glmer(SAE ~ TIME * GROUP + SEX + AGE + (1|ID) + (1|SITE) , data = long.dat, family = binomial)
+
+obs.prob.fit <- glmgee(OBS ~ TIME + GROUP + AGE + GENDER + SITE, id = ID, data = long.dat, family = binomial, corr = )
 ```
 
 
