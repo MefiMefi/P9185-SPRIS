@@ -130,9 +130,18 @@ long.dat <- left_join(long.dat, baseline.dat, by = "ID") %>%
          SEX = as.factor(SEX),
          SAE = as.factor(SAE))
 
-glmm.fit <- glmer(SAE ~ TIME * GROUP + SEX + AGE + (1|ID) + (1|SITE) , data = long.dat, family = binomial)
+glmm.fit <- glmer(SAE ~ TIME * GROUP + SEX + AGE + (1|ID) , data = long.dat, family = binomial)
 
-obs.prob.fit <- glmgee(OBS ~ TIME + GROUP + AGE + GENDER + SITE, id = ID, data = long.dat, family = binomial, corr = )
+glmm.fit.1 <- glmer(SAE ~ TIME + GROUP + SEX + AGE + (1|ID) , data = long.dat, family = binomial)
+
+glmm.fit.null <- glmer(SAE ~ TIME + SEX + AGE + (1|ID) , data = long.dat, family = binomial)
+
+anova(glmm.fit.1, glmm.fit.null)
+anova(glmm.fit.1, glmm.fit)
+
+summary(glmm.fit)
+summary(glmm.fit.1)
+summary(glmm.fit.null)
 ```
 
 
