@@ -1,8 +1,30 @@
 ---
-title: "project4_analysis"
-author: "Ryan Wei"
-date: "2024-04-23"
-output: html_document
+title: "COVID"
+author: "Ryan Wei  UNI: rw2844"
+output: 
+  bookdown::pdf_document2:
+    toc: no
+    collapsed: no
+    theme: readable
+    citation_package: natbib
+bibliography: ["project3.bib"]
+biblio-style: "apalike"
+link-citations: true
+geometry: "margin=1in"
+fontsize: 12pt
+linestretch: 1.5
+header-includes:
+  - \usepackage{appendix}
+  - \usepackage{titling}
+  - \setlength{\droptitle}{-5em}  # Adjust title position, the larger the number, the higher the title
+  - \usepackage{titlesec}
+  - \titlespacing*{\chapter}{0pt}{-80pt}{20pt}  # Adjust chapter title spacing (left, before, after)
+  - \titlespacing*{\section}{0pt}{2.5ex plus 1ex minus .2ex}{1.3ex plus .2ex}
+  - \titlespacing*{\subsection}{0pt}{2.25ex plus 1ex minus .2ex}{1.1ex plus .2ex}
+  - \titleformat*{\section}{\large\bfseries}
+  - \titleformat*{\subsection}{\normalsize\bfseries}
+  - \usepackage{caption}
+  - \DeclareCaptionLabelFormat{AppendixTables}{A.#2}
 ---
 
 ```{r setup, include=FALSE}
@@ -19,6 +41,7 @@ library(nlme)
 library(geepack)
 library(gee)
 library(glmtoolbox)
+library(gtsummary)
 ```
 
 
@@ -38,7 +61,7 @@ moderate to severe asthma
 - Significant cardiac disease (eg, heart failure, coronary artery 
 disease, congenital heart disease, cardiomyopathies, and 
 pulmonary hypertension)
-- Severe obesity (body mass index ≥ 40 kg/m2
+- Severe obesity (body mass index $\ge$ 40 kg/m2
 )
 - Diabetes (Type 1, Type 2 or gestational)
 - Liver disease
@@ -67,7 +90,7 @@ A stratified Cox proportional hazard model will be used to assess the magnitude 
 - incident rate in the control group : $p_C = 0.0075$
 
 - vaccine efficacy: $\pi = 1-\frac{p_T}{p_C} = 1-R$
-
+  
 - null hypothesis: $H_0:\pi \le \pi_0$
 
 - $u = n_T/n_C$
@@ -101,7 +124,9 @@ pT = (1 - pi1) * pC
 theta1 = (1 - pi1)/(1 - pi1 + u)
 
 alpha = 0.025
-beta = 0.90
+beta = 0.80
+
+d = 0.02
 
 sample.size.VE.low <- function(pT, pC, theta0, theta1, alpha, beta){
   z.alpha = qnorm(1-alpha)
@@ -111,7 +136,7 @@ sample.size.VE.low <- function(pT, pC, theta0, theta1, alpha, beta){
   return(nom/denom)
 }
 
-sample.size.VE.low(pT,pC,theta0,theta1,alpha,beta)
+sample.size.VE.low(pT,pC,theta0,theta1,alpha,beta)/(1-d)
 ```
 
 
@@ -124,26 +149,74 @@ baseline.dat <- readxl::read_excel("./Q2b_BL.xlsx")
 
 long.dat <- left_join(long.dat, baseline.dat, by = "ID") %>% 
   mutate(OBS = if_else(is.na(SAE), 0, 1)) %>% 
-  mutate(TIME = as.factor(TIME),
-         GROUP = as.factor(GROUP),
-         SITE = as.factor(SITE),
-         SEX = as.factor(SEX),
-         SAE = as.factor(SAE))
+  mutate(TIME = factor(TIME),
+         GROUP = factor(GROUP, labels = c("Control", "Vaccine"), levels = c(0,1)),
+         SITE = factor(SITE),
+         SEX = factor(SEX, labels = c("Female", "Male"), levels = c(0,1)),
+         SAE = factor(SAE, labels = c("No", "Yes"), levels = c(0,1)))
 
-glmm.fit <- glmer(SAE ~ TIME * GROUP + SEX + AGE + (1|ID) , data = long.dat, family = binomial)
+glmm.fit <- glmer(SAE ~ TIME * GROUP + SEX + AGE + (1|ID) , data = long.dat, family = binomial, nAGQ = 0)
 
-glmm.fit.1 <- glmer(SAE ~ TIME + GROUP + SEX + AGE + (1|ID) , data = long.dat, family = binomial)
+glmm.fit.1 <- glmer(SAE ~ TIME + GROUP + SEX + AGE + (1|ID) , data = long.dat, family = binomial, nAGQ = 0)
 
-glmm.fit.null <- glmer(SAE ~ TIME + SEX + AGE + (1|ID) , data = long.dat, family = binomial)
+glmm.fit.null <- glmer(SAE ~ TIME + SEX + AGE + (1|ID) , data = long.dat, family = binomial, nAGQ = 0)
 
 anova(glmm.fit.1, glmm.fit.null)
 anova(glmm.fit.1, glmm.fit)
+anova(glmm.fit, glmm.fit.null)
 
 summary(glmm.fit)
 summary(glmm.fit.1)
 summary(glmm.fit.null)
+
+glmm.tbl <-
+  tbl_regression(glmm.fit, exponentiate = T, 
+               label = list(
+                 TIME ~ "Time points",
+                 GROUP ~ "Treatment group",
+                 SEX ~ "Gender",
+                 AGE ~ "Age"
+      )
+      )
 ```
 
+```{r}
+library(table1)
+```
+
+```{r fig.cap="Number of subjects experienced serious adverse events (SAE) at each time point, stratified by treatment group."}
+long.dat %>% 
+  group_by(TIME, GROUP) %>% 
+  mutate(SAE_TOTAL = sum(SAE == "Yes", na.rm = T),
+         MISSING_TOTAL = sum(OBS == 0)) %>% 
+  select(TIME, GROUP, SAE_TOTAL, MISSING_TOTAL) %>% 
+  unique() %>% 
+  ggplot(aes(x=TIME, y=SAE_TOTAL, fill=GROUP)) +
+  geom_bar(stat="identity", position=position_dodge()) +
+  #labs(title="SAE_TOTAL vs TIME by GROUPS") +
+  ylab("Number of subjects who experienced SAE") +
+  xlab("Time (Months)") + 
+  labs(fill = "Treatment Group") + 
+  theme_bw() + 
+  theme(legend.position = "bottom") 
+```
+
+```{r fig.cap="Number of missing observations at each time point, stratified by treatment group."}
+long.dat %>% 
+  group_by(TIME, GROUP) %>% 
+  mutate(SAE_TOTAL = sum(SAE == "Yes", na.rm = T),
+         MISSING_TOTAL = sum(OBS == 0)) %>% 
+  select(TIME, GROUP, SAE_TOTAL, MISSING_TOTAL) %>% 
+  unique() %>% 
+  ggplot(aes(x=TIME, y=MISSING_TOTAL, fill=GROUP)) +
+  geom_bar(stat="identity", position=position_dodge()) +
+  #labs(title="SAE_TOTAL vs TIME by GROUPS") +
+  ylab("Number of missing observations") +
+  xlab("Time (Months)") + 
+  labs(fill = "Treatment Group") + 
+  theme_bw() + 
+  theme(legend.position = "bottom") 
+```
 
 # Survival
 
