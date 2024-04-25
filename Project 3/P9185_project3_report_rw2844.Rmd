@@ -1,5 +1,5 @@
 ---
-title: "Project3"
+title: "Analyzing the Influence of Race and Education on Menopause Onset: A Survival Analysis Approach"
 author: "Ryan Wei  UNI: rw2844"
 output: 
   bookdown::pdf_document2:
@@ -7,7 +7,7 @@ output:
     collapsed: no
     theme: readable
     citation_package: natbib
-bibliography: ["project2.bib"]
+bibliography: ["project3.bib"]
 biblio-style: "apalike"
 link-citations: true
 geometry: "margin=1in"
@@ -15,7 +15,25 @@ fontsize: 12pt
 linestretch: 1.5
 header-includes:
   - \usepackage{appendix}
+  - \usepackage{titling}
+  - \setlength{\droptitle}{-5em}  # Adjust title position, the larger the number, the higher the title
+  - \usepackage{titlesec}
+  - \titlespacing*{\chapter}{0pt}{-80pt}{20pt}  # Adjust chapter title spacing (left, before, after)
+  - \titlespacing*{\section}{0pt}{2.5ex plus 1ex minus .2ex}{1.3ex plus .2ex}
+  - \titlespacing*{\subsection}{0pt}{2.25ex plus 1ex minus .2ex}{1.1ex plus .2ex}
+  - \titleformat*{\section}{\large\bfseries}
+  - \titleformat*{\subsection}{\normalsize\bfseries}
+  - \usepackage{caption}
+  - \DeclareCaptionLabelFormat{AppendixTables}{A.#2}
 ---
+
+```{r codechunck-setup, include = F}
+knitr::opts_chunk$set(echo = F, message = F, warning = F)
+source(knitr::purl("./project3_analysis.Rmd", quiet=TRUE))
+library(knitr)
+library(kableExtra)
+```
+
 
 # Introduction
 
@@ -25,7 +43,7 @@ Menopause is ascertained when a woman has had no menstrual periods for 12 consec
 
 ## Study Design
 
-The data set contains longitudinal information about 380 women who have not had a hysterectomy and have not experienced menopause before intake (recruitment). All 380 women were followed over time until they experienced menopause, died, or were censored due to either the woman dropping out or the study ending. Patient's age (in years) when the patient was recruited into the study was recorded (`intake_age`), as well as patient's menopause age (in years) or censoring age (in years), recorded as `menopause_age`. A binary indicator `menopause` is used to record whether or not a patient was observed to experience menopause, with `menopause = 1` if patient was observed to experience menopause and `menopause = 0` if patient was censored at `menopause_age`. Baseline demographic characters were also recorded. Patient's ethnicity was recorded as `race` with `race = 0` for White non-Hispanic patient; `race = 1` for Black, non-Hispanic patient; `race = 2` for Other Ethnicity patient. Patient's education level was recorded as `education` with `education = 0` if patient had Post-graduate education; `education = 1` if patient had Collage Graduate education; `education = 2` if patient had Some Collage education; `education = 3` if patient had High School Education (or less) education.
+The data set contains longitudinal information about 380 women who have not had a hysterectomy and have not experienced menopause before intake (recruitment). All 380 women were followed over time until they experienced menopause, died, or were censored due to either the woman dropping out or the study ending. Patient's age (in years) when the patient was recruited into the study was recorded (`intake_age`), as well as patient's menopause age (in years) or censoring age (in years), recorded as `menopause_age`. A binary indicator `menopause` is used to record whether or not a patient was observed to experience menopause, with `menopause = 1` if patient was observed to experience menopause and `menopause = 0` if patient was censored at `menopause_age`. Baseline demographic characters were also recorded. Patient's ethnicity was recorded as `race` with `race = 0` for White non-Hispanic patient; `race = 1` for Black, non-Hispanic patient; `race = 2` for Other Ethnicity patient. Patient's education level was recorded as `education` with `education = 0` if patient had Post-graduate education; `education = 1` if patient had Collage Graduate education; `education = 2` if patient had Some Collage education; `education = 3` if patient had High School Education (or less) education. We will use the number codes to denote these categories in the analyses.
 
 ## Research Interests
 
@@ -40,35 +58,227 @@ In right censoring, it is convenient to use the following notation. For a specif
 
 ### Left Truncation
 
-Since the event of interest for this study is menopause, subject will be enrolled in this study after a certain age. This is an unique nature of our data, which is left-truncated and right-censored. To deal with the left truncation, let $X_i$ denotes the left truncation time, which is the intake age in this study. We can observe $Y_i$ if and only if $X_i\le Y_i$. We considered two ways to account for the left-truncated nature of our data. One way is to create the menopause time, denoted as $Z_i = \min \left(Y_i - X_i, C_i - X_i\right)$, the duration from the subject entered the study to the occurrence of the event or censoring, then conduct analyses on this new event time. Another way is analyzing $T_i$ directly by accounting for the left truncation. Specifically, we assume assume that menopause age $Y_i$ and intake age $X_i$ are quasi-independent, i.e. the joint pdf $f(x, y)$ of $(X_i,Y_i)$ can be written as $f(x, y) = Cf(y)g(x)$ for $y>x$, and $0$ otherwise, where $f$ and $g$ are two density functions and $C$ is a constant that makes $f(x,y)$ a genuine bivariate density function. 
+Since the event of interest for this study is menopause, subject will be enrolled in this study after a certain age. This is an unique nature of our data, which is left-truncated and right-censored. To deal with the left truncation, let $X_i$ denotes the left truncation time, which is the intake age in this study. We can observe $Y_i$ if and only if $X_i\le Y_i$. We considered two ways to account for the left-truncated nature of our data. One way is to create the menopause time, denoted as $Y^*_i = \min \left(Y_i - X_i, C_i - X_i\right)$, the duration from the subject entered the study to the occurrence of the event or censoring, then conduct analyses on this new event time. Another way is analyzing $T_i$ directly by accounting for the left truncation. Specifically, we assume assume that menopause age $Y_i$ and intake age $X_i$ are quasi-independent, i.e. the joint pdf $f(x, y)$ of $(X_i,Y_i)$ can be written as $f(x, y) = Cf(y)g(x)$ for $y>x$, and $0$ otherwise, where $f$ and $g$ are two density functions and $C$ is a constant that makes $f(x,y)$ a genuine bivariate density function. 
 
 ### Non-parametric Methods
 
-For the non-parametric estimator of the survival function, we adopted the standard Kaplan-Meier estimator of the survival function, proposed by Kaplan and Meier (1958), is called the Product-Limit estimator. This estimator is defined as follows for all values of $t$ in the range where there is data:
+For the non-parametric estimator of the survival function, we adopted the standard Kaplan-Meier estimator of the survival function, proposed by Kaplan and Meier (@Kaplan1958), is called the Product-Limit estimator. This estimator is defined as follows for all values of $t$ in the range where there is data:
 $$
 \hat{S}(t)=\left\{\begin{array}{ll}
 1 & \text { if } t<t_j, \\
 \prod_{t_j \leq t}\left[1-\frac{d_j}{n_j}\right], & \text { if } t_j \leq t
 \end{array} .\right.
 $$
-where $t_j$'s, $j  = 1,2,\ldots, D$ are the distinct event time observed in the data. $n_j$'s are the number of subjects at risk at time $t$. For the analyses of the menopause time $Z_i$, $n_j$ is the number of subjects who hadn't experienced menopause or the censoring just before $t_j$. For the analyses of the menopause age $Y_i$, $n_j$ is the number of subjects who hadn't experienced menopause or the censoring just before $t_j$ and the subject had been enrolled in the study, i.e., $X_i \ge t_j$. $d_j$'s are the number of subjects who experience the event at time $t_j$.
+where $t_j$'s, $j  = 1,2,\ldots, D$ are the distinct event time observed in the data. $n_j$'s are the number of subjects at risk at time $t$. For the analyses of the menopause time $Y^*_i$, $n_j$ is the number of subjects who hadn't experienced menopause or the censoring just before $t_j$. For the analyses of the menopause age $Y_i$, $n_j$ is the number of subjects who hadn't experienced menopause or the censoring just before $t_j$ and the subject had been enrolled in the study, i.e., $X_i \ge t_j$. $d_j$'s are the number of subjects who experience the event at time $t_j$.
 
 The variance of the Product-Limit estimator is estimated by Greenwood's formula:
 $$
 \hat{V}[\hat{S}(t)]=\hat{S}(t)^2 \sum_{t_j \leq t} \frac{d_j}{n_j\left(n_j-d_j\right)} .
 $$
 
-We adopted the so-called log-rank test to test whether there exists a difference in survival distributions between different strata defined by some covariates. For this study, we particularly interested in testing whether there are any differences in the survival distributions between different ethnicity groups. Let $k = 0,1,2$ denotes the index for White, non-Hispanic, Black, non-Hispanic and Other Ethnicity patient groups. We can write the above hypothesis as $H_0: S_0(t)=S_1(t)=S_2(t)$ versus $H_1$ : at least one of the sub-group survival function is different from others. Here $S_k(t)$'s are the subgroup's survival functions. Then, the log-rank test statistic can be written as 
+We adopted the so-called log-rank test (@Jones1989) to test whether there exists a difference in survival distributions between different strata defined by some covariates. For this study, we particularly interested in testing whether there are any differences in the survival distributions between different ethnicity groups. Let $k = 0,1,2$ denotes the index for White, non-Hispanic, Black, non-Hispanic and Other Ethnicity patient groups. We can write the above hypothesis as $H_0: S_0(t)=S_1(t)=S_2(t)$ versus $H_1$ : at least one of the sub-group survival function is different from others. Here $S_k(t)$'s are the subgroup's survival functions. Then, the log-rank test statistic can be written as 
 $$\chi^2=\left(Z_1\left(t_D\right), Z_2\left(t_D\right), Z_3\left(t_D\right)\right) \Sigma^{-1}\left(Z_1\left(t_D\right), Z_2\left(t_D\right), Z_3\left(t_D\right)\right)^T,$$ where $Z_k\left(t_D\right)=\sum_{j=1}^D W\left(t_j\right)\left[d_{j k}-n_{j k}\left(\frac{d_j}{n_j}\right)\right], k=1,2,3, j = 1,\ldots,D$, here $W\left(t_j\right) \equiv 1$ for all $t_j$, which means we are giving equal weights to all event time. $d_{jk}$ and $n_{jk}$ are the number of event at time $t_j$ and number of subjects at risk right before $t_j$ for subgroup $k$, respectively. $\Sigma$ is the variance covariance matrix of $\left(Z_1\left(t_D\right), Z_2\left(t_D\right), Z_3\left(t_D\right)\right)^T$, its components is estimated by $\widehat{\sigma}^2_{kk}=\sum_{j=1}^D W\left(t_j\right)^2 \frac{n_{j k}}{n_j}\left(1-\frac{n_{j k}}{n_j}\right)\left(\frac{n_j-d_j}{n_j-1}\right) d_j$ and $\widehat{\sigma}^2_{k g}=-\sum_{j=1}^D W\left(t_j\right)^2 \frac{n_{j k}}{n_j} \frac{n_{j g}}{n_j}\left(\frac{n_j-d_j}{n_j-1}\right) d_j, g = 1,2,3,g \neq j$. The test statistic follows a $\chi^2$ distribution with degrees of freedom equal to $2$. We reject the null hypothesis $H_0$ at an $\alpha$ level when $\chi^2$ is larger than the $\alpha$-th upper percentile of $\chi^2_2$.
 
 ### Parametric Methods
 
-For the parametric estimator of the survival function,
+For the parametric estimator of the survival function, we only considered the exponential model for menopause time, i.e., $Y^*_i$ follows an exponential distribution with density function $f(y^*) = \lambda e^{-\lambda y^*}$ and the hazard function is just a constant $\lambda$. For this model, we didn't consider any covariates and the parameter $\lambda$ is estimated by maximizing the observed likelihood.
 
 ### Semi-parametirc Methods
 
+For semi-parametric method, we considered the Cox proportional hazard model (@Enderlein1987). Let $\lambda(t\mid \mathbf{Z}_i)$ be the hazard rate at time $t$ for $i$-th individual with baseline risk factors $\mathbf{Z}_i$. In this study $\mathbf{Z}_i$ contains subject's race and education level. Under non-informative censoring and proportional hazard assumption, the Cox proportional hazard model can be written as:
+$$
+\lambda(t\mid \mathbf{Z}_i) = \lambda_0(t)\exp\{\boldsymbol{\beta}^T\mathbf{Z}_i\} ,
+$$
+where $\lambda_0(t)$ is the baseline hazard for all subjects at time $t$, which is left unspecified. $\boldsymbol{\beta}$ is the parameter vector which can be estimated by maximizing partial likelihood. Notice that under quasi-independent assumption, we have $\lambda(t\mid \mathbf{Z}_i, X_i) = \lambda(t\mid \mathbf{Z}_i)$.
+
+We are also interested in testing a hypothesis about a subset of the $\boldsymbol{\beta}$ 's. The hypothesis is then $H_0: \boldsymbol{\beta}_1=\boldsymbol{\beta}_{10}$, where $\boldsymbol{\beta}=\left(\boldsymbol{\beta}_1^T, \boldsymbol{\beta}_2^T\right)^T$. Here $\boldsymbol{\beta}_1$ is a $q \times 1$ vector of the $\boldsymbol{\beta}$ 's of interest and $\boldsymbol{\beta}_2$ is the vector of the remaining $p-q \boldsymbol{\beta}$ 's. We can establish a Wald test of $H_0: \boldsymbol{\beta}_1=\boldsymbol{\beta}_{10}$, which is based on the maximum partial likelihood estimators of $\boldsymbol{\beta}$. Let $\mathbf{b}=\left(\mathbf{b}_1^T, \mathbf{b}_2^T\right)^T$ be the maximum partial likelihood estimator of $\boldsymbol{\beta}$. Suppose we partition the information matrix $\mathbf{I}$ as
+$$
+\mathbf{I}=\left(\begin{array}{ll}
+\mathbf{I}_{11} & \mathbf{I}_{12} \\
+\mathbf{I}_{21} & \mathbf{I}_{22}
+\end{array}\right),
+$$
+where $\mathbf{I}_{11}\left(\mathbf{I}_{22}\right)$ is the $q \times q[(p-q) \times(p-q)]$ submatrix of second partial derivatives of the minus log likelihood with respect to $\boldsymbol{\beta}_1\left(\boldsymbol{\beta}_2\right)$ and $\mathbf{I}_{12}$ and $\mathbf{I}_{21}$, the matrices of mixed second partial derivatives. The Wald test statistic is
+$$
+\chi_{W}^2=\left(\mathbf{b}_1-\boldsymbol{\beta}_{10}\right)^T\left[\mathbf{I}^{11}(\mathbf{b})\right]^{-1}\left(\mathbf{b}_1-\boldsymbol{\beta}_{10}\right)
+$$
+where $\mathbf{I}^{11}(\mathbf{b})$ is the upper $q \times q$ sub-matrix of $\mathbf{I}^{-1}(\mathbf{b})$. For large samples, this statistic has a chi-squared distribution with $q$ degrees of freedom under $H_0$ (@Klein2003). We reject the null hypothesis $H_0$ at an $\alpha$ level when $\chi^2_W$ is larger than the $\alpha$-th upper percentile of $\chi^2_q$.
+
+Another important analysis to do is to check the proportional hazard assumption for all covariates. One way is to plot the $\log\{-\log\{\hat{S}(t)\}\} = \hat{\boldsymbol{\beta}}^T\mathbf{Z}_i+\log\{-\log\{\hat{S}_0(t)\}\}$ against the time or the logarithm of time, where $\hat{S}_0(t)$ is the estimated baseline survival function. Under proportional assumption, for a categorical variable, if we plot the lines for all the categories, we expecting parallel lines. Another way is plot the weighted Schoenfeld residuals, which measures the deviation of a time-dependent log-hazard ratio $\beta(t)$ from time-constant $\beta$. If the proportional hazards assumption holds then the residuals should line on a horizontal line passing the origin. Formal score tests are also conducted to test whether the slope is zero, a linear fit to the plot would approximate the test.
+
+## Analysing Software
+
+All analysis are performed by using `R`. Specifically, we used `survival` package (@survival-package) to conduct the non-parametric analyses and semi-parametric analyses. Package `flexsurv` (@flexsurv-pkg) are used to conduct the parametric analyses.
 
 # Result
 
+## Baseline Characteristics of the Study Population
+
+Table \@ref(tab:table-1) shows the descriptive statistics of the baseline characteristics of the subjects in the study. From the table we can see that subjects who experienced menopause have a larger mean age at enrollment with a narrower range compare to subjects who censored. We also see more Black, non-Hispanic subjects in the menopause group.
+
+```{r table-1, echo=FALSE}
+library(table1)
+meno.base <-  meno.dat
+
+meno.base$menopause = ifelse(meno.base$menopause == 1, "Menopause", "Censoring")
+meno.base$race = factor(meno.base$race, levels = c(0,1,2), labels = c("White, non-Hispanic (0)", "Black, non-Hispanic (1)", "Other Ethnicity (2)"))
+
+meno.base$education = factor(meno.base$education, levels = c(0,1,2,3), labels = c("Post-graduate education (0)", "Collage graduate education (1)", "Some Collage education (2)", "High school or less education (3)"))
+
+label(meno.base$intake_age) = "Age at enrollment"
+label(meno.base$menopause) = "Ascertained menopause"
+label(meno.base$race) = "Race"
+label(meno.base$education) = "Education"
+table1( ~ intake_age + race + education | menopause, data=meno.base, caption="Descriptive statistics of baseline characteristics of the subjects by menopause status.")
+```
+
+Figure \@ref(fig:surv-traj) shows the time to menopause and duration from age at enrollment to age at menopause for all subjects in this study, we can see that except for one subject who was enrolled when she was 59 years old, the majority of subjects was enrolled with age less than 55 years old.
+
+```{r surv-traj, fig.cap="Subject's time to menopause (upper panel) and subject's age at enrollment to menopause age (lower panel). Each horizontal grey line denotes one subject's data.",fig.height= 8 , fig.width= 8, echo=FALSE}
+meno.traj.time <-
+  meno.dat %>% arrange(desc(intake_age)) %>% 
+  mutate(id_intake = 1:nrow(meno.dat)) %>% 
+ggplot(aes(x =0, xend = menopause_time, y = id_intake, yend = id_intake)) +
+  geom_segment(color = "gray", alpha = 0.8, lineend = "butt") +  # Draw the line segments
+  geom_point(aes(x = menopause_time, color = factor(menopause), shape = factor(menopause)), size = 1, show.legend = T) +  
+  scale_color_manual(values = c("1", "2")) +  # Red for 0, green for 1
+  scale_shape_manual(values = c(1,4)) +
+  labs(x = "Time to menopause (years)", y = "Individuals", color = "Menopause", shape = "Menopause") +
+  theme_bw() +
+  theme(legend.position = "none")
+
+meno.traj.age <-
+  meno.dat %>% arrange(desc(intake_age)) %>% 
+  mutate(id_intake = 1:nrow(meno.dat)) %>% 
+ggplot(aes(x = intake_age, xend = menopause_age, y = id_intake, yend = id_intake)) +
+  geom_segment(color = "gray", alpha = 0.8, lineend = "butt") +  # Draw the line segments
+  geom_point(aes(x = menopause_age, color = factor(menopause), shape = factor(menopause)), size = 1, show.legend = T) +  
+  scale_color_manual(values = c("1", "2")) +  # Red for 0, green for 1
+  scale_shape_manual(values = c(1,4)) +
+  labs(x = "Menopause Age (years)", y = "Individuals", color = "Menopause", shape = "Menopause") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+meno.traj.time/meno.traj.age
+```
+
+
+## Analyses Results on Menopause Time
+
+Menopause time is defined as the duration between subject's intake age and menopause age. Figure \@ref(fig:km-meno-time) shows the non-parametric Kaplan-Meier estimates of the survival function (see \@ref(tab:km-tab-time) in the Appendix for full survival probability estimates). The estimated survival probabilities are above $76.6\%$ and since the estimated survival probability never touches $50\%$, the Kaplan-Meier estimator does not give us an estimated median survival time. 
+
+The exponential survival model gives an estimated parameter $\hat{\lambda} = 0.057$ with a $95\%$ CI (0.045  0.071). Since the exponential model can be used to extrapolate survival probabilities beyond the observed data range, we get an estimated median survival time $12.20$ years.
+ 
+```{r km-meno-time, fig.cap="Kaplan-Meier estimates of the survival function of the study population and the number of subjects at risk at each time. The shaded area is the $95\\%$ confidence interval of the estimates. The red crosses indicates the censorings.", echo=FALSE}
+ggsurvplot(km.fit, data = meno.dat, conf.int = TRUE, risk.table = T, legend = "none", xlab = "Time to menopause (years)")
+#exp.fit$coefficients
+```
+
+Table \@ref(tab:cox-ph-meno-time) shows the hazard ratio (HR) estimates from the Cox proportional hazard model. From the table, we see that compared to White, non-Hispanic subjects, the Black, non-Hispanic subjects have 2.46 ($95\%$ CI: 1.29-4.72) times the hazard of experiencing menopause, holding everything else the same. We also see that compared to subjects with post-graduate education, subjects with collage graduate education have 0.41 ($95\%$ CI: 0.21-0.80) times the hazard of experiencing menopause, holding everything else the same. Age at enrollment is also an significant risk factor. For each year increase in the age at enrollment from the mean age at enrollment, the hazard of experiencing menopause increases 1.36 times ($95\%$ CI: 1.27-1.47), which is biologically reasonable since the older the subject is, the more likely she will experience menopause in the near future.
+
+```{r cox-ph-meno-time, echo=FALSE}
+library(gtsummary)
+#mean(meno.base$intake_age)
+meno.base$intake_age = meno.base$intake_age - mean(meno.base$intake_age)
+coxph.fit <- coxph(Surv(menopause_time, menopause == "Menopause") ~ race + education + intake_age , data = meno.base)
+tbl_regression(coxph.fit, exponentiate = T, label = list(
+      race ~ "Race",
+      education ~ "Education level",
+      `intake_age` ~ "Age at enrollment"
+    )) %>% 
+  modify_header( update = list(p.value = "p-value", ci = "$95\\%$ CI", label = "Characteristics", estimate = "HR")) %>% 
+  as_kable(booktabs = T, escape = FALSE, caption = "Hazard ratio (HR) estimates from the Cox proportional hazard model and $95\\%$ confidence interval from the Cox proportional hazard model. The event time is the menopause time.") %>%  kable_styling(latex_options = c("hold_position"))
+```
+
+Figure \@ref(fig:cloglog-meno-time) and figure \@ref(fig:schoenfeld-meno-time) show the results from the graphical approach and the Schoenfeld residual based approach for checking proportional hazard assumptions. From figure \@ref(fig:cloglog-meno-time), we see that the curves for Black, non-Hispanic subjects and other ethnicity subjects seem to be parallel to each other while they are not seem to be parallel to the curve for the White, non-Hispanic subjects. While for all education levels, the curves seem to be parallel to each other. The individual and global Schoenfeld residual test all show p-values less than $0.05$, and we conclude that we cannot reject the null that the proportional hazard assumption holds at $\alpha = 0.05$ significance level.
+
+```{r cloglog-meno-time, fig.height= 6 , fig.width= 8, fig.cap="$\\log\\{-\\log\\{\\hat{S}(t)\\}\\}$ against the time, stratified by race (upper panel) and education level (lower panel).", echo=FALSE}
+(cloglog.race$plot + xlab("Time to menopause (years)")) / (cloglog.educ$plot + xlab("Time to menopause (years)"))
+```
+
+```{r schoenfeld-meno-time, fig.cap = "Schoenfeld residual plots with individual score test p-value and global test p-value. The solid lines are the smoothing curves and the dashed lines shows the $95\\%$ confidence band.",fig.height= 6 , fig.width= 8, echo=FALSE}
+cox.schoenfeld <- ggcoxzph(ph.test, ylab = "Residuals")
+cox.sch.1 <- cox.schoenfeld[[1]] + ggtitle("Schoenfeld individual test p-value: 0.782") + xlab("Time to menopause (years)")
+cox.sch.2 <- cox.schoenfeld[[2]] + ggtitle("Schoenfeld individual test p-value: 0.713") + xlab("Time to menopause (years)")
+cox.sch.3 <- cox.schoenfeld[[3]] + ggtitle("Schoenfeld individual test p-value: 0.504") + xlab("Time to menopause (years)")
+
+cox.sch.1/ cox.sch.2 / cox.sch.3 + plot_annotation(title = 'Global Schoenfeld test p-value: 0.922')
+```
+
+## Analyses Results on Menopause Age
+
+For the analyses on menopause age, we accounted for the age at enrollment. Figure \@ref(fig:km-meno-age) shows the non-parametric Kaplan-Meier estimates of the survival function (see \@ref(tab:km-tab-age) in the Appendix for full survival probability estimates). The estimated median survival time is 55.0 years old. The exponential model gives us the same estimate as in the analyses on menopause time.
+
+```{r km-meno-age, echo=FALSE ,fig.cap="Kaplan-Meier survival function estimates (stepped curve) and the exponential survival function estimates (smooth curve) of the study population and the number of subjects at risk at each time."}
+ggsurvplot(exp.fit.left , xlab = "Menopause Age (years)", censor = F, risk.table = T)
+```
+
+In order to know whether the survival distributions for the three race groups are equivalent or not, we first plotted the Kaplan-Meier estimates for the survival functions stratified by race groups, shown in figure \@ref(fig:km-race-meno-age). The log-rank test against equivalence results in a test statistics $6.66$, with p-value $0.036$. We reject the null at $\alpha = 0.05$ significance level and conclude the survival distributions for the three race groups are not equivalent.
+
+```{r km-race-meno-age, fig.cap="Kaplan-Meier survival function estimates of the study population and the number of subjects at risk at each time, stratified by race groups. The shaded areas are the $95\\%$ confidence intervals of the estimates.", echo=FALSE}
+ggsurvplot(km.fit.left.race, data = meno.dat, pval.method = TRUE, conf.int = TRUE, censor = F, risk.table = T,tables.height = 0.3,legend.labs = c("White, non-Hispanic", "Black, non-Hispanic", "Other Ethnicity"), legend.title = "Race")
+```
+
+Table \@ref(tab:cox-ph-meno-age) shows the hazard ratio (HR) estimates from the Cox proportional hazard model for menopause age. From the table, we see that compared to White, non-Hispanic subjects, the Black, non-Hispanic subjects have 2.49 ($95\%$ CI: 1.29-4.80) times the hazard of experiencing menopause, holding everything else the same. We also see that compared to subjects with post-graduate education, subjects with collage graduate education have 0.44 ($95\%$ CI: 0.23-0.83) times the hazard of experiencing menopause, holding everything else the same. These estimates are slightly different from what we got in the analyses on menopause time since we controlled for left truncation. The Wald test testing the null that the race is not a significant risk factor after controlling for education level results in a test statistic $6.69$ with p-value $0.035$, which leads to a conclusion that race is a significant risk factor after controlling for education level. 
+
+From these results, we can get estimates for HR of a specific sub-population. For example, the HR of experiencing menopause for a Black, non-Hispanic subject versus an other ethnicity subject controlling for education is $2.64$ with $95\%$ CI (0.98,7.09). This means that on average, after controlling for education level, the hazard of experiencing menopause for a Black, non-Hispanic subject is 2.64 times the hazard of an other ethnicity subjects experiencing the same event. However, this effect may not be statistically significant. 
+
+```{r cox-ph-meno-age, echo=FALSE}
+coxph.fit.race.educ <- coxph(Surv(intake_age, menopause_age, menopause == "Menopause") ~ race + education, data = meno.base)
+coxph.fit.race.educ %>% tbl_regression(.,exponentiate = T, label = list(
+      race ~ "Race",
+      education ~ "Education level"
+    ))%>% 
+  modify_header( update = list(p.value = "p-value", ci = "$95\\%$ CI", label = "Characteristics", estimate = "HR")) %>% 
+  as_kable(booktabs = T, escape = FALSE, caption = "Hazard ratio (HR) estimates from the Cox proportional hazard model and $95\\%$ confidence interval from the Cox proportional hazard model. The event time is the menopause age.") %>%  kable_styling(latex_options = c("hold_position"))
+```
+
+We can also get the estimated survival function for a specific sub-population. For example, for the reference group, i.e., White, non-Hispanic subjects with post-graduate education, the estimated survival function is shown in figure \@ref(fig:cox-ph-meno-age-surv). The estimated median survival time is 54.42 years old ($95\%$ CI: 53.5-56.3) which is slightly smaller than the pooled population.
+
+```{r cox-ph-meno-age-surv, fig.cap = "Estimated baseline survival function for the White, non-Hispanic with post-graduate education sub-population.", echo=FALSE}
+ggadjustedcurves(coxph.fit.race.educ, data = data.frame(race = levels(meno.base$race)[1], education = levels(meno.base$education)[1]), method = "single") + scale_x_continuous(breaks = seq(0, 60, 10))
+```
+
+Figure \@ref(fig:cloglog-meno-age) and figure \@ref(fig:schoenfeld-meno-age) show the results from the graphical approach and the Schoenfeld residual based approach for checking proportional hazard assumptions. From the results from graphical approach, we see similar patterns as before, that the curves for Black, non-Hispanic subjects and other ethnicity subjects seem to be parallel to each other while they are not seem to be parallel to the curve for the White, non-Hispanic subjects. While for all education levels, the curves seem to be parallel to each other. The individual and global Schoenfeld residual test also show p-values less than $0.05$, and we conclude that we cannot reject the null that the proportional hazard assumption holds at $\alpha = 0.05$ significance level.
+
+```{r cloglog-meno-age, fig.height= 6 , fig.width= 8, fig.cap="$\\log\\{-\\log\\{\\hat{S}(t)\\}\\}$ against the time (menopause age), stratified by race (upper panel) and education level (lower panel).", echo=FALSE}
+(cloglog.race.left$plot + xlab("Menopause Age (years)")) / (cloglog.educ.left$plot + xlab("Menopause Age (years)"))
+```
+
+```{r schoenfeld-meno-age, fig.cap = "Schoenfeld residual against menopause age with individual score test p-value and global test p-value. The solid lines are the smoothing curves and the dashed lines shows the $95\\%$ confidence band.",fig.height= 6 , fig.width= 8, echo=FALSE}
+cox.schoenfeld.left <- ggcoxzph(ph.test.race.educ, ylab = "Residuals")
+cox.sch.1.left <- cox.schoenfeld.left[[1]] + ggtitle("Schoenfeld individual test p-value: 0.393") + xlab("Menopause Age (years)")
+cox.sch.2.left <- cox.schoenfeld.left[[2]] + ggtitle("Schoenfeld individual test p-value: 0.820") + xlab("Menopause Age (years)")
+
+cox.sch.1.left/ cox.sch.2.left + plot_annotation(title = 'Global Schoenfeld test p-value: 0.675')
+```
 # Discussion
-# Appendix {-}
+
+This study provided a comprehensive statistical analysis of menopause timing among a diverse cohort of women. The non-parametric Kaplan-Meier estimates shows that when analyzing menopause time, the estimated survival probability never touches $50\%$, which may not be biological reasonable. After adjusting for the left-truncated nature of the data, we found that the median survival time for our study population is 55 years old, which may be more reasonable and more generalizable.
+
+The Cox proportional hazard model highlighted significant disparities in menopause timing. Black, non-Hispanic women had a notably higher hazard ratio for experiencing menopause compared to their White, non-Hispanic counterparts, even when controlling for educational background. This finding suggests underlying genetic, environmental, or socio-economic factors that could precipitate earlier menopause, warranting further investigation. Interestingly, women with college education exhibited a lower hazard ratio, potentially indicating that lifestyle or environmental factors associated with higher educational attainment might delay the onset of menopause. However, since our study is observational, it cannot establish causality, and these associations may be confounded by other unmeasured factors.
+
+Despite the robustness of our analyses, certain limitations must be acknowledged. One such limitation is our application of the log-rank test, where we assumed equal weighting across all event times. Alternative weighted versions of the log-rank test could provide a more nuanced understanding of the survival distributions across different strata. Weighted tests allow differential emphasis on events at various times, which could be particularly relevant if earlier or later events carry different clinical implications or if the proportional hazards assumption is questionable.
+
+Additionally, while we addressed the methodological complexities associated with left truncation and right censoring, other forms of data censoring and truncation were not explored. Non-random censoring, if present, could introduce bias into our results, and further techniques might be needed to account for this.
+
+In summary, while our study has provided valuable insights, these limitations highlight the importance of methodological rigor and the need for continuous refinement of statistical methods to better understand the complexities of menopause timing.
+
+Overall, our findings contribute to a more stratified understanding of menopause timing, which could inform healthcare providers and policymakers. Targeted health education and preventive care could be tailored to women more likely to experience earlier menopause, possibly mitigating associated health risks. Further research should explore the biopsychosocial factors that influence menopause timing, with a particular focus on interventions that could equalize health outcomes across different demographic groups.
+
+# (APPENDIX) Appendix {-}
+
+## A.1 Additional Survival Tables
+
+\captionsetup{labelformat=AppendixTables}
+\setcounter{table}{0}
+
+```{r km-tab-time, echo = F}
+km.tab.time <- summary(km.fit)
+data.frame(`Time` = km.fit$time, `Number of subjects at risk` = km.fit$n.risk,  `Number of events` = km.fit$n.event, `Survival probability` = km.fit$surv, `Lower 95 \\% CI` = km.fit$lower, `Upper 95 \\% CI` = km.fit$upper) %>% kable(escape = F, booktabs = T, col.names = c("$t_i$","$n_i$","$d_i$","$\\hat{S}(t_i)$","Lower 95 $\\%$ CI","Upper 95 $\\%$ CI"), caption = "Kaplan-Meier estimates of the survival probabilities. The event time is time to menopause.", longtable = T) %>% kable_styling(latex_options = c("hold_position", "repeat_header"))
+```
+
+```{r km-tab-age, echo = F}
+data.frame(`Time` = km.fit.left$time, `Number of subjects at risk` = km.fit.left$n.risk,  `Number of events` = km.fit.left$n.event, `Survival probability` = km.fit.left$surv, `Lower 95 \\% CI` = km.fit.left$lower, `Upper 95 \\% CI` = km.fit.left$upper) %>% kable(escape = F, booktabs = T, col.names = c("$t_i$","$n_i$","$d_i$","$\\hat{S}(t_i)$","Lower 95 $\\%$ CI","Upper 95 $\\%$ CI"), caption = "Kaplan-Meier estimates of the survival probabilities. The event time is menopause age.", longtable = T) %>% kable_styling(latex_options = c("hold_position", "repeat_header"))
+```
+

@@ -1,0 +1,362 @@
+## ----setup, include=FALSE-----------------------------------------------------
+knitr::opts_chunk$set(echo = TRUE)
+
+
+## -----------------------------------------------------------------------------
+# pacman::p_load(tidyverse, plotly, shiny, scales, patchwork, DiagrammeR,
+#                survival, KMsurv, flexsurv, eha, ctqr, cmprsk, mstate, ggsurvfit, survminer, 
+#                Epi, epitools, gnm, splines)
+
+library(tidyverse)
+library(survival)
+library(KMsurv)
+library(flexsurv)
+library(ggsurvfit)
+library(survminer)
+library(patchwork)
+theme_set(theme_classic() + theme(legend.position = "bottom"))
+
+
+## -----------------------------------------------------------------------------
+meno.dat <- read.table("./Menopause.dat",header = F)
+colnames(meno.dat) <- c("id", "intake_age", "menopause_age", "menopause", "race", "education")
+meno.dat$menopause_time <- meno.dat$menopause_age - meno.dat$intake_age
+meno.dat$truncated <- ifelse(meno.dat$menopause == 1 & meno.dat$menopause_time <= 1, 1, 0)
+meno.dat$race <- as.factor(meno.dat$race)
+meno.dat$education <- as.factor(meno.dat$education)
+#meno.dat$menopause <- as.factor(meno.dat$menopause)
+
+
+## -----------------------------------------------------------------------------
+table(meno.dat$menopause)
+
+
+## -----------------------------------------------------------------------------
+meno.dat %>% arrange(desc(intake_age)) %>% 
+  mutate(id_intake = 1:nrow(meno.dat)) %>% 
+ggplot(aes(x = intake_age, xend = menopause_age, y = id_intake, yend = id_intake)) +
+  geom_segment(color = "gray", alpha = 0.8, lineend = "butt") +  # Draw the line segments
+  geom_point(aes(x = menopause_age, color = factor(menopause), shape = factor(menopause)), size = 1, show.legend = T) +  
+  scale_color_manual(values = c("1", "2")) +  # Red for 0, green for 1
+  scale_shape_manual(values = c(1,4)) +
+  labs(x = "Age (years)", y = "Individuals", color = "Menopause", shape = "Menopause") +
+  theme_bw() +
+  theme(legend.position = "right")
+
+
+## -----------------------------------------------------------------------------
+meno.dat %>% arrange(desc(intake_age)) %>% 
+  mutate(id_intake = 1:nrow(meno.dat)) %>% 
+ggplot(aes(x =0, xend = menopause_time, y = id_intake, yend = id_intake)) +
+  geom_segment(color = "gray", alpha = 0.8, lineend = "butt") +  # Draw the line segments
+  geom_point(aes(x = menopause_time, color = factor(menopause), shape = factor(menopause)), size = 1, show.legend = T) +  
+  scale_color_manual(values = c("1", "2")) +  # Red for 0, green for 1
+  scale_shape_manual(values = c(1,4)) +
+  labs(x = "Time to menopause (years)", y = "Individuals", color = "Menopause", shape = "Menopause") +
+  theme_bw() +
+  theme(legend.position = "right")
+
+
+## -----------------------------------------------------------------------------
+exp.fit <- flexsurvreg(Surv(menopause_time, menopause) ~ 1, data = meno.dat, dist = "exponential")
+exp.fit
+print(exp.fit)
+log(2)/exp(coef(exp.fit))
+ggsurvplot(exp.fit, xlab = "Time to menopause (years)", censor = F)
+
+
+## -----------------------------------------------------------------------------
+km.fit <- survfit(Surv(menopause_time, menopause) ~ 1, data = meno.dat)
+ggsurvplot(km.fit, data = meno.dat, conf.int = TRUE, risk.table = T)
+print(km.fit)
+summary(km.fit)
+
+## -----------------------------------------------------------------------------
+wrap_plots(
+  ggsurvfit(km.fit, type = "risk") + add_confidence_interval(),
+  ggsurvfit(km.fit, type = "cumhaz") + add_confidence_interval()
+)
+
+
+## -----------------------------------------------------------------------------
+coxph.fit <- coxph(Surv(menopause_time, menopause) ~ race + education + intake_age, data = meno.dat)
+summary(coxph.fit)
+
+ggforest(coxph.fit)
+
+
+ggcoxfunctional(Surv(menopause_time, menopause) ~ intake_age + log(intake_age) + sqrt(intake_age), data = meno.dat)
+
+
+## -----------------------------------------------------------------------------
+# graphical method
+km.fit.race <- survfit(Surv(menopause_time, menopause) ~ race, data = meno.dat)
+km.fit.educ <- survfit(Surv(menopause_time, menopause) ~ education, data = meno.dat)
+cloglog.race <- ggsurvplot(km.fit.race, data = meno.dat, fun = "cloglog", legend.labs = c("White, non-Hispanic", "Black, non-Hispanic", "Other Ethnicity"), legend.title = "Race") 
+cloglog.race$plot
+
+cloglog.educ <- ggsurvplot(km.fit.educ, data = meno.dat, fun = "cloglog", legend.labs = c("Post-Graduate", "College Graduate", "Some College", "High School Education(or less)"), legend.title = "Education") 
+cloglog.educ$plot
+
+
+## -----------------------------------------------------------------------------
+ph.test <- cox.zph(coxph.fit)
+ph.test
+ggcoxzph(ph.test)
+ggcoxdiagnostics(coxph.fit,
+ type = "schoenfeld")
+
+
+## -----------------------------------------------------------------------------
+# km-fit by truncated or not
+# km.fit.trunc <- survfit(Surv(menopause_time, menopause) ~ truncated, data = meno.dat)
+# ggsurvplot(km.fit.trunc, data = meno.dat, conf.int = TRUE, risk.table = T) 
+# print(km.fit.trunc)
+
+
+## -----------------------------------------------------------------------------
+# km-fit by truncated or not
+# km.fit.trunc.2 <- survfit(Surv(intake_age, menopause_age, menopause) ~ truncated, data = meno.dat)
+# ggsurvplot(km.fit.trunc.2, data = meno.dat, conf.int = TRUE, risk.table = T) 
+# print(km.fit.trunc.2)
+
+
+## -----------------------------------------------------------------------------
+km.fit.left <- survfit(Surv(intake_age, menopause_age, menopause) ~ 1, data = meno.dat)
+summary(km.fit.left)
+km.fit.left
+km.fit.ignore.left <- survfit(Surv(menopause_age, menopause) ~ 1, data = meno.dat)
+
+km.left.plot <- ggsurvplot(km.fit.left, data = meno.dat, pval.method = TRUE, conf.int = TRUE, risk.table = T)
+km.ignore.left.plot <- ggsurvplot(km.fit.ignore.left, data = meno.dat, pval.method = TRUE, conf.int = TRUE)
+
+ggsurvplot(list("Ingore left-truncation" = km.fit.ignore.left, "Consider left-truncation" = km.fit.left), data = meno.dat, combine = T, legend.labs = c("Ignore truncation", "Consider truncation"), legend.title = "Type")$plot 
+
+exp.fit.left <- flexsurvreg(Surv(intake_age, menopause_age, menopause) ~ 1, data = meno.dat, dist = "exponential")
+
+exp.fit.left
+print(exp.fit.left)
+print(exp.fit)
+log(2)/exp(coef(exp.fit.left))
+ggsurvplot(exp.fit.left , xlab = "Menopause Age (years)", censor = F, risk.table = T)
+
+
+## -----------------------------------------------------------------------------
+survdiff.mod <- function (formula, data, subset, na.action,
+rho = 0, timefix = TRUE) {
+# get elements from function input
+call <- match.call()
+m <- match.call(expand.dots = FALSE)
+m$rho <- NULL
+## ## ## ## ## ##
+## error checking
+## ## ## ## ## ##
+# from original survdiff function
+if (!inherits(formula, "formula"))
+stop("The 'formula' argument is not a formula")
+Terms <- if (missing(data))
+terms(formula, "strata")
+else terms(formula, "strata", data = data)
+m$formula <- Terms
+m[[1L]] <- quote(stats::model.frame)
+m <- eval(m, parent.frame())
+y <- model.extract(m, "response") # Surv object
+if (!inherits(y, "Surv"))
+stop("Response must be a survival object")
+ny <- ncol(y) # 2 (w/o left truncation) or 3 (w/ left truncation)
+n <- nrow(y) # number of observations
+if (!is.logical(timefix) || length(timefix) > 1)
+stop("invalid value for timefix option")
+if (timefix)
+y <- aeqSurv(y)
+ll <- attr(Terms, "term.labels")
+if (length(ll) == 0)
+stop("No groups to test")
+else groups <- strata(m[ll]) # group for each observation
+## ## ## ## ##
+## rank test
+## ## ## ## ##
+# move untruncated to left truncation "format" with all entry = 0
+if (ny == 2) {
+times <- data.frame(entry = rep(0, n),
+exit = y[,1],
+cens = y[,2])
+}
+# left truncation stays in the same format
+else {
+times <- data.frame(entry = y[,1],
+exit = y[,2],
+cens = y[,3])
+}
+if (nrow(y) !=n | length(groups) !=n) stop("Data length mismatch")
+if (length(unique(groups)) < 2) stop ("There is only 1 group")
+# format group as numeric 0 or 1
+if (inherits(groups, "factor")) times$groups <- as.numeric(groups) - 1
+else times$groups <- match(groups, unique(groups))
+# initialize vectors and i
+n0i_all <- c() # expected value
+n1i_all <- c()
+n2i_all <- c()
+e0i_all <- c() # expected value
+e1i_all <- c()
+e2i_all <- c()
+d0i_all <- c()
+d1i_all <- c()
+d2i_all <- c()# number of events in control group
+i = 1
+# create vector of all unique event times (exclude censoring)
+event_times <- sort(unique(times[times$cens == 1,]$exit))
+# at each observed event time t:
+for (t in event_times) {
+# number in risk set
+n0i <- nrow(
+times[(times$entry <= t) & (t <= times$exit) & (times$groups == 0),]
+)
+n1i <- nrow(
+times[(times$entry <= t) & (t <= times$exit) & (times$groups == 1),]
+)
+
+n2i <- nrow(
+times[(times$entry <= t) & (t <= times$exit) & (times$groups == 2),]
+)
+ni <- n0i + n1i + n2i
+
+n0i_all[i] <- n0i
+n1i_all[i] <- n1i
+n2i_all[i] <- n2i
+# number of events
+d0i <- nrow(
+times[(t == times$exit) & (times$groups == 0) & (times$cens == 1),]
+)
+d1i <- nrow(
+times[(t == times$exit) & (times$groups == 1) & (times$cens == 1),]
+)
+d2i <- nrow(
+times[(t == times$exit) & (times$groups == 2) & (times$cens == 1),]
+)
+d0i_all[i] <- d0i
+d1i_all[i] <- d1i
+d2i_all[i] <- d2i
+di <- d0i + d1i + d2i
+# E(d0i) and Var(d0i)
+e0i <- (n0i * di) / ni
+e1i <- (n1i * di) / ni
+e2i <- (n2i * di) / ni
+e0i_all[i] <- e0i
+e1i_all[i] <- e1i
+e2i_all[i] <- e2i
+i = i + 1
+}
+return(list(
+d0 = d0i_all ,
+d1 = d1i_all ,
+d2 = d2i_all ,
+n0 = n0i_all ,
+n1 = n1i_all ,
+n2 = n2i_all 
+))
+}
+
+
+
+
+
+## -----------------------------------------------------------------------------
+km.fit.left.race <- survfit(Surv(intake_age, menopause_age, menopause) ~ race, data = meno.dat)
+ggsurvplot(km.fit.left.race, data = meno.dat, pval.method = TRUE, conf.int = TRUE, censor = F, risk.table = T,tables.height = 0.3,legend.labs = c("White, non-Hispanic", "Black, non-Hispanic", "Other Ethnicity"), legend.title = "Race")
+km.fit.left.race
+#surv_summary(km.fit.left.race, data = meno.dat)
+
+
+## -----------------------------------------------------------------------------
+logrank.left.list <- survdiff.mod(Surv(intake_age, menopause_age, menopause) ~ race, data = meno.dat)
+logrank.left.df <- as.data.frame(logrank.left.list)
+logrank.left.df <-
+  logrank.left.df %>% 
+  mutate(z0 = d0 - n0 * (d0 + d1 + d2) / (n0 + n1 + n2),
+         z1 = d1 - n1 * (d0 + d1 + d2) / (n0 + n1 + n2),
+         z2 = d2 - n2 * (d0 + d1 + d2) / (n0 + n1 + n2),
+         v0 = (n0 / (n0 + n1 + n2)) * (1 - (n0 / (n0 + n1 + n2))) * (((n0 + n1 + n2) - (d0 + d1 + d2))/((n0 + n1 + n2) - 1)) * (d0 + d1 + d2),
+         v1 = (n1/ (n0 + n1 + n2)) * (1 - (n1 / (n0 + n1 + n2))) * (((n0 + n1 + n2) - (d0 + d1 + d2))/((n0 + n1 + n2) - 1)) * (d0 + d1 + d2),
+         v2 = (n2/ (n0 + n1 + n2)) * (1 - (n2 / (n0 + n1 + n2))) * (((n0 + n1 + n2) - (d0 + d1 + d2))/((n0 + n1 + n2) - 1)) * (d0 + d1 + d2),
+         v01 = - (n0/(n0 + n1 + n2)) * (n1/(n0 + n1 + n2)) * (((n0 + n1 + n2) - (d0 + d1 + d2))/((n0 + n1 + n2) - 1)) * (d0 + d1 + d2),
+         v02 = - (n0/(n0 + n1 + n2)) * (n2/(n0 + n1 + n2)) * (((n0 + n1 + n2) - (d0 + d1 + d2))/((n0 + n1 + n2) - 1)) * (d0 + d1 + d2),
+         v12 = - (n1/(n0 + n1 + n2)) * (n2/(n0 + n1 + n2)) * (((n0 + n1 + n2) - (d0 + d1 + d2))/((n0 + n1 + n2) - 1)) * (d0 + d1 + d2)
+         )
+
+# unweighted log-rank test statistics
+Z_vec = c(sum(logrank.left.df$z0), sum(logrank.left.df$z1), sum(logrank.left.df$z2))
+V_mat = matrix(rep(0,9), nrow = 3)
+diag(V_mat) <- c(sum(logrank.left.df$v0), sum(logrank.left.df$v1), sum(logrank.left.df$v2))
+V_mat[2,1] = sum(logrank.left.df$v01)
+V_mat[3,1] = sum(logrank.left.df$v02)
+V_mat[3,2] = sum(logrank.left.df$v12)
+V_mat[1,2] = sum(logrank.left.df$v01)
+V_mat[1,3] = sum(logrank.left.df$v02)
+V_mat[2,3] = sum(logrank.left.df$v12)
+
+T.left <- t(Z_vec) %*% MASS::ginv(V_mat) %*% (Z_vec)
+logrank.pval.left <- pchisq(T.left, 2, lower.tail = FALSE) # 0.0358
+
+
+
+## -----------------------------------------------------------------------------
+coxph.fit.race <- coxph(Surv(intake_age, menopause_age, menopause) ~ as.factor(race), data = meno.dat)
+
+summary(coxph.fit.race)
+
+anova(coxph.fit.race, coxph(Surv(intake_age, menopause_age, menopause) ~1, data = meno.dat))
+
+
+## -----------------------------------------------------------------------------
+coxph.fit.race.educ<- coxph(Surv(intake_age, menopause_age, menopause) ~ race + education, data = meno.dat)
+
+summary(coxph.fit.race.educ)
+
+coxph.fit.educ <- coxph(Surv(intake_age, menopause_age, menopause) ~ education, data = meno.dat)
+anova(coxph.fit.race.educ, coxph.fit.educ)
+anova(coxph.fit.race.educ, coxph.fit.race)
+ggforest(coxph.fit.race.educ, data = meno.dat)
+
+
+## -----------------------------------------------------------------------------
+beta.diff.b.vs.o <- coef(coxph.fit.race.educ)[[1]]-coef(coxph.fit.race.educ)[[2]]
+rr.b.vs.o <- exp(beta.diff.b.vs.o)
+
+
+vcov.cox.race.educ <- vcov(coxph.fit.race.educ)
+
+beta.diff.se <- sqrt(vcov.cox.race.educ['race1', 'race1'] + vcov.cox.race.educ['race2', 'race2'] - 2 * vcov.cox.race.educ['race1', 'race2'])
+
+CI.beta.diff.L <- beta.diff.b.vs.o - 1.96 * beta.diff.se 
+CI.beta.diff.U <- beta.diff.b.vs.o + 1.96 * beta.diff.se
+
+CI.rr.L <- exp(CI.beta.diff.L)
+CI.rr.U <- exp(CI.beta.diff.U)
+
+
+## -----------------------------------------------------------------------------
+base.haz.race.educ <- basehaz(coxph.fit.race.educ, centered = FALSE)
+
+surv_adjustedcurves(coxph.fit.race.educ, data = data.frame(race = as.factor(0), education = as.factor(0)), method = "single")
+ggadjustedcurves(coxph.fit.race.educ, data = data.frame(race = as.factor(0), education = as.factor(0)), method = "single", reference = meno.dat[meno.dat$race == 1,]) + scale_x_continuous(breaks = seq(0, 60, 10))
+survfit(coxph.fit.race.educ, newdata = data.frame(race = as.factor(0), education = as.factor(0)))
+
+
+## -----------------------------------------------------------------------------
+# graphical method
+cloglog.race.left <- ggsurvplot(km.fit.left.race, data = meno.dat, fun = "cloglog", xlim = c(40, 80), legend.labs = c("White, non-Hispanic", "Black, non-Hispanic", "Other Ethnicity"), legend.title = "Race") 
+cloglog.race.left$plot
+km.fit.left.educ <- survfit(Surv(intake_age, menopause_age, menopause) ~ as.factor(education), data = meno.dat)
+
+cloglog.educ.left <- ggsurvplot(km.fit.left.educ, data = meno.dat, fun = "cloglog", xlim = c(40, 80), legend.labs = c("Post-Graduate", "College Graduate", "Some College", "High School Education(or less)"), legend.title = "Education") 
+cloglog.educ.left$plot
+
+
+## -----------------------------------------------------------------------------
+ph.test.race.educ <- cox.zph(coxph.fit.race.educ)
+ph.test.race.educ
+ggcoxzph(ph.test.race.educ) + ylab("Residuals")
+ggcoxdiagnostics(coxph.fit.race.educ,
+ type = "scaledsch")
+

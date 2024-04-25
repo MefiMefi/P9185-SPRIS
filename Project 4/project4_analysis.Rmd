@@ -1,0 +1,149 @@
+---
+title: "project4_analysis"
+author: "Ryan Wei"
+date: "2024-04-23"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(survival)
+library(KMsurv)
+library(flexsurv)
+library(ggsurvfit)
+library(survminer)
+library(patchwork)
+library(lme4)
+library(nlme)
+```
+
+
+# Study design
+
+## Randomization Procedure
+
+Participants will be randomly assigned to receive injections of either100 $\mu g$ of mRNA-1273 vaccine or a placebo control in a 1:1 randomization ratio. Randomization will be stratified based on age and, if they are $<$ 65 years of age, based on the presence or absence of risk factors for severe illness from COVID-19 based on CDC recommendation as of Mar 2020. There will be 3 strata for randomization: $\ge$ 65 years, $<$ 65 years and categorized to be at increased risk ("at risk") for the complications of COVID-19, and $<$ 65 years "not at risk". 
+
+Risk will be defined based on the study participants’ relevant past and current medical history. At least 25\% of enrolled participants, but not more than 40\%, will be either $\ge$ 65 years of age or $<$ 65 years of age and "at risk" at Screening.
+
+Participants who are less than 65 years old will be categorized as at risk for severe COVID-19 illness if they have at least 1 of the following risk factors at Screening:
+
+- Chronic lung disease (eg, emphysema and chronic bronchitis, 
+idiopathic pulmonary fibrosis, and cystic fibrosis) or 
+moderate to severe asthma
+- Significant cardiac disease (eg, heart failure, coronary artery 
+disease, congenital heart disease, cardiomyopathies, and 
+pulmonary hypertension)
+- Severe obesity (body mass index ≥ 40 kg/m2
+)
+- Diabetes (Type 1, Type 2 or gestational)
+- Liver disease
+- Human Immunodeficiency Virus (HIV) infection
+
+All participants will be assessed for efficacy and safety endpoints and provide a nasopharyngeal (NP) swab sample and blood sample before the first and second dose of IP in addition to a series of post-dose blood samples for immunogenicity through 24 months after the second dose of IP. Efficacy assessments will include surveillance for COVID-19 with RT-PCR confirmation of SARS-CoV-2 infection after the first and second dose of IP. 
+
+## Statistical Analysis
+
+Statistical Hypotheses: For the primary efficacy objective, the null hypothesis of this study is that the VE of mRNA-1273 to prevent first occurrence of COVID-19 is $\le 30\%$ (ie, $H_0:$
+efficacy: VE $\le 0.3$).
+
+The study will be considered to meet the primary efficacy objective if the corresponding CI of VE rules out 30\% at the primary analysis. In the primary analysis of VE of COVID-19, cases will be counted starting 14 days after the second dose of IP.
+
+Vaccine efficacy is defined as the percent reduction in the hazard of the primary endpoint (mRNA-1273 vs placebo). Equivalently, the null hypothesis is:
+- $H_0:$ efficacy: hazard ratio (HR) $\ge$ 0.7 (equivalently, proportional 
+hazards VE $\le$ 0.3).
+
+A stratified Cox proportional hazard model will be used to assess the magnitude of the treatment group difference (ie, HR) between mRNA-1273 and placebo at a 1-sided 0.025 significance level
+
+
+## Sample Size Calculation
+
+- incident rate in the vaccine group : $p_T$
+
+- incident rate in the control group : $p_C = 0.0075$
+
+- vaccine efficacy: $\pi = 1-\frac{p_T}{p_C} = 1-R$
+
+- null hypothesis: $H_0:\pi \le \pi_0$
+
+- $u = n_T/n_C$
+
+## Method 1
+
+
+- number of cases in the vaccine group follows a Poisson distribution with rate $\lambda_T = n_Tp_T$
+
+- number of cases in the controlled group follows a Poisson distribution with rate $\lambda_C = n_Cp_C$
+
+- number of cases in the vaccine group given the total number of cases $S$: $\operatorname{Binomial}(S,\theta)$, where $\theta = \frac{\lambda_T}{\lambda_T + \lambda_C} = \frac{1-\pi}{1-\pi + u}$
+
+- rewrite null hypothesis $H_0:\theta \ge \theta_0$
+
+
+- target risk reduction: $\pi_1 = 0.6  = 1-\frac{p_T}{p_C}$, $p_T = 0.003$, $\theta_1 = 0.2857143$
+
+- rejection margin risk reduction: $\pi_0 = 0.3$, $\theta_0 = 0.4117647$
+
+
+$$n=\frac{\left[z_\alpha \sqrt{\theta_0\left(1-\theta_0\right)}+z_\beta \sqrt{\theta(1-\theta)}\right]^2}{\left(p_T+p_C\right)\left(\theta-\theta_0\right)^2}$$
+
+```{r}
+pC = 0.0075
+u = 1
+pi0 = 0.3
+theta0 = (1 - pi0)/(1 - pi0 + u)
+pi1 = 0.6
+pT = (1 - pi1) * pC
+theta1 = (1 - pi1)/(1 - pi1 + u)
+
+alpha = 0.025
+beta = 0.90
+
+sample.size.VE.low <- function(pT, pC, theta0, theta1, alpha, beta){
+  z.alpha = qnorm(1-alpha)
+  z.beta = qnorm(beta)
+  nom = (z.alpha * sqrt(theta0 * (1 - theta0)) + z.beta * sqrt(theta1 * (1 - theta1)))^2
+  denom = (pT + pC) * (theta1 - theta0)^2
+  return(nom/denom)
+}
+
+sample.size.VE.low(pT,pC,theta0,theta1,alpha,beta)
+```
+
+
+
+# SAE
+
+```{r}
+long.dat <- readxl::read_excel("./Q2b.xlsx")
+baseline.dat <- readxl::read_excel("./Q2b_BL.xlsx")
+
+long.dat <- left_join(long.dat, baseline.dat, by = "ID") %>% 
+  mutate(SAE = if_else(SAE == 0, 0, 1))
+
+glmm.fit <- glmer()
+```
+
+
+# Survival
+
+```{r}
+survival.dat <- readxl::read_excel("./Q2c.xlsx",col_types = rep("numeric", 5)) %>% 
+  mutate(InfectionTime = if_else(is.na(InfectionTime), LastFUTime, InfectionTime))
+
+km.fit <- survfit(Surv(EnrollmentTime, InfectionTime, Infection) ~ 1, data = survival.dat)
+
+ggsurvplot(km.fit, data = survival.dat, pval.method = TRUE, conf.int = TRUE, censor = F, risk.table = T,tables.height = 0.3)
+
+print(km.fit)
+
+km.fit2 <- survfit(Surv(InfectionTime, Infection) ~ 1, data = survival.dat)
+
+ggsurvplot(km.fit2, data = survival.dat, pval.method = TRUE, conf.int = TRUE, censor = F, risk.table = T,tables.height = 0.3)
+
+print(km.fit2)
+
+
+```
+

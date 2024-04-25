@@ -10,9 +10,17 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-pacman::p_load(tidyverse, plotly, shiny, scales, patchwork, DiagrammeR,
-               survival, KMsurv, flexsurv, eha, ctqr, cmprsk, mstate, ggsurvfit, survminer, 
-               Epi, epitools, gnm, splines)
+# pacman::p_load(tidyverse, plotly, shiny, scales, patchwork, DiagrammeR,
+#                survival, KMsurv, flexsurv, eha, ctqr, cmprsk, mstate, ggsurvfit, survminer, 
+#                Epi, epitools, gnm, splines)
+
+library(tidyverse)
+library(survival)
+library(KMsurv)
+library(flexsurv)
+library(ggsurvfit)
+library(survminer)
+library(patchwork)
 theme_set(theme_classic() + theme(legend.position = "bottom"))
 ```
 
@@ -78,8 +86,9 @@ ggsurvplot(exp.fit, xlab = "Time to menopause (years)", censor = F)
 
 ```{r}
 km.fit <- survfit(Surv(menopause_time, menopause) ~ 1, data = meno.dat)
-ggsurvplot(km.fit, data = meno.dat, conf.int = TRUE, risk.table = T) 
+ggsurvplot(km.fit, data = meno.dat, conf.int = TRUE, risk.table = T)
 print(km.fit)
+summary(km.fit)
 ```
 ```{r}
 wrap_plots(
@@ -96,6 +105,7 @@ coxph.fit <- coxph(Surv(menopause_time, menopause) ~ race + education + intake_a
 summary(coxph.fit)
 
 ggforest(coxph.fit)
+
 
 ggcoxfunctional(Surv(menopause_time, menopause) ~ intake_age + log(intake_age) + sqrt(intake_age), data = meno.dat)
 ```
@@ -156,8 +166,9 @@ exp.fit.left <- flexsurvreg(Surv(intake_age, menopause_age, menopause) ~ 1, data
 
 exp.fit.left
 print(exp.fit.left)
+print(exp.fit)
 log(2)/exp(coef(exp.fit.left))
-ggsurvplot(exp.fit.left , xlab = "Time to menopause (years)", censor = F)
+ggsurvplot(exp.fit.left , xlab = "Menopause Age (years)", censor = F, risk.table = T)
 ```
 
 ### IV
@@ -286,7 +297,7 @@ n2 = n2i_all
 
 ```{r}
 km.fit.left.race <- survfit(Surv(intake_age, menopause_age, menopause) ~ race, data = meno.dat)
-ggsurvplot(km.fit.left.race, data = meno.dat, pval.method = TRUE, conf.int = TRUE, censor = F, legend.labs = c("White, non-Hispanic", "Black, non-Hispanic", "Other Ethnicity"), legend.title = "Race")
+ggsurvplot(km.fit.left.race, data = meno.dat, pval.method = TRUE, conf.int = TRUE, censor = F, risk.table = T,tables.height = 0.3,legend.labs = c("White, non-Hispanic", "Black, non-Hispanic", "Other Ethnicity"), legend.title = "Race")
 km.fit.left.race
 #surv_summary(km.fit.left.race, data = meno.dat)
 ```
@@ -357,7 +368,7 @@ rr.b.vs.o <- exp(beta.diff.b.vs.o)
 
 vcov.cox.race.educ <- vcov(coxph.fit.race.educ)
 
-beta.diff.se <- sqrt(vcov.cox.race.educ['as.factor(race)1', 'as.factor(race)1'] + vcov.cox.race.educ['as.factor(race)2', 'as.factor(race)2'] - 2 * vcov.cox.race.educ['as.factor(race)1', 'as.factor(race)2'])
+beta.diff.se <- sqrt(vcov.cox.race.educ['race1', 'race1'] + vcov.cox.race.educ['race2', 'race2'] - 2 * vcov.cox.race.educ['race1', 'race2'])
 
 CI.beta.diff.L <- beta.diff.b.vs.o - 1.96 * beta.diff.se 
 CI.beta.diff.U <- beta.diff.b.vs.o + 1.96 * beta.diff.se
