@@ -123,7 +123,7 @@ pi1 = 0.6
 pT = (1 - pi1) * pC
 theta1 = (1 - pi1)/(1 - pi1 + u)
 
-alpha = 0.025
+alpha = 0.05
 beta = 0.80
 
 d = 0.02
@@ -235,7 +235,18 @@ km.fit2 <- survfit(Surv(InfectionTime, Infection) ~ 1, data = survival.dat)
 ggsurvplot(km.fit2, data = survival.dat, pval.method = TRUE, conf.int = TRUE, censor = F, risk.table = T,tables.height = 0.3)
 
 print(km.fit2)
+summary(km.fit2, time = 365)$table
+summary(km.fit2)$table
 
+print(km.fit2, print.rmean = TRUE)
 
+km.fit2 %>% tbl_survfit(times = c(365.25, 365.25*2), label_header = "**1-year Survival (95% CI)**")
+km.fit2 %>% tbl_survfit(
+    probs = 0.25,
+    label_header = "**25 survival quantile (95% CI)**"
+  )
+
+exp.fit <- flexsurvreg(Surv(InfectionTime,  Infection) ~ 1, data = survival.dat, dist = "exponential")
+log(2)/exp(coef(exp.fit))
 ```
 
