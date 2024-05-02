@@ -1,0 +1,241 @@
+---
+title: "project5"
+author: "Ryan Wei"
+date: "2024-05-02"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(mice)
+library(ggplot2)
+library(tidyverse)
+library(cowplot)
+library(lme4)
+library(GLMMadaptive)
+library(glmmTMB)
+library(patchwork)
+library(fitdistrplus)
+library(pscl)
+```
+
+
+```{r load-data}
+dat <- read_excel("./Proj 4 data.xlsx")
+
+dat$school <- as.factor(dat$school)
+dat$group <- as.factor(dat$group)
+dat$ID <- as.factor(dat$ID)
+dat <- dat %>% 
+  group_by(ID) %>% 
+  arrange(time) %>% 
+  mutate(SFD_baseline = first(SFD), observed = factor(as.numeric(!is.na(SFD))), n_miss = sum(is.na(SFD))) %>% 
+  ungroup %>% 
+  mutate(time = factor(time))
+```
+
+```{r}
+library(table1)
+table1(~ SFD_baseline + school | group, data=dat %>% filter(time == 1)) 
+```
+
+
+```{r eda}
+traj.plot<-
+  dat %>% 
+  ggplot(aes(x = time, y = SFD)) +
+  geom_line(alpha = 0.3, linewidth = 0.5, aes(group = ID, color = group)) +
+  facet_grid(.~school) + 
+  geom_smooth(color="blue", method="lm", aes(group = 1), se = FALSE) +
+  ylab("SFD (in last two weeks)")+
+  xlab("Follow up time (months)")+
+  scale_x_discrete(labels = c(0,6,12))+
+  labs(color = "Treatment Group")+
+  theme_bw() + 
+  theme(legend.position = "none")
+  
+
+traj.box <-
+  dat %>% 
+  ggplot(aes(x = time, y = SFD, color = group)) +
+  geom_boxplot(alpha = 0.3, linewidth = 0.5 ) +
+  facet_grid(.~school) + 
+  ylab("SFD (in last two weeks)")+
+  xlab("Follow up time (months)")+
+  scale_x_discrete(labels = c(0,6,12))+
+  labs(color = "Treatment Group")+
+  theme_bw() + 
+  theme(legend.position = "none")
+
+ggsave("./plots/trajectory_plot.jpg", (traj.plot/traj.box) + theme(legend.position = "bottom"), width = 10, height = 8, dpi = 300)
+```
+
+```{r missing-vis}
+traj.miss <-
+  dat %>% group_by(time, group) %>% 
+  mutate(sum_miss = sum(observed == 0), total_obs = n(), prop_miss = sum_miss/ total_obs) %>% 
+  ggplot(aes(x = time, y = prop_miss, fill = group)) +
+  facet_grid(. ~ school) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(y = "Proportion of Missing Observations", x = "Group", color = "Treatment Group") +
+  theme_bw()
+
+ggsave("./plots/missing_plot.jpg", traj.miss, width = 10, height = 8, dpi = 300)
+```
+
+```{r}
+mean.score.plot <-
+dat %>% 
+  group_by(ID) %>% 
+  mutate(total_obs = sum(as.numeric(observed))) %>% 
+  ungroup() %>% 
+  mutate(type = as.factor(ifelse(total_obs == 3, "Completer", "Drop-out"))) %>% 
+  group_by(type, time, group) %>% 
+  mutate(mean_SFD = mean(SFD,na.rm = T)) %>% 
+  dplyr::select(time, group, type, mean_SFD, school) %>% 
+  distinct() %>% 
+  ungroup() %>% 
+  ggplot(aes(x = time, y = mean_SFD, group = interaction(group, type), color = group, linetype = type)) +
+  geom_line(alpha = 0.8, size = 0.5) +
+  scale_linetype_manual(values = c("Completer" = "solid", "Drop-out" = "dashed")) +
+  labs(color = "Treatment Group", linetype = "Type") +
+  ylab("SFD")+
+  xlab("Follow up time (months)")+
+  scale_x_discrete(labels = c(0,6,12))+
+  theme_bw()
+
+mean.score.plot
+ggsave("./plots/mean_SFD_plot.jpg", mean.score.plot, width = 12, height = 8, dpi = 300)
+```
+
+```{r}
+hist(dat[dat$time == "1",]$SFD,breaks = 10)
+hist(dat[dat$time == "2",]$SFD,breaks = 10)
+hist(dat[dat$time == "3",]$SFD,breaks = 10)
+```
+
+```{r}
+fit_pois <- fitdist(dat$SFD[!is.na(dat$SFD)], "pois")
+fit_negbin <- fitdist(dat$SFD[!is.na(dat$SFD)], "nbinom")
+
+fit_zipois <- zeroinfl(SFD ~ 1, data = dat, dist = "poisson")
+fit_zinb <- zeroinfl(SFD ~ 1, data = dat, dist = "negbin")
+
+SFD.emp.true <-
+  ggplot() +
+  #geom_histogram(aes(y=..density..), binwidth=1, color="black", fill="white") +
+  geom_histogram(aes(x = dat$SFD, y = stat(count / sum(count))), alpha=.2, bins = 15) +
+  geom_point(aes(color = "pois", x = 0:15, y = dpois(0:15,lambda = fit_pois$estimate["lambda"])))+
+  geom_point(aes(color = "nb", x = 0:15, y = dnbinom(0:15,size = fit_negbin$estimate["size"], mu = fit_negbin$estimate["mu"]))) +
+  geom_point(aes(color = "zipois",x = 0:15, y = plogis(coef(fit_zipois, model = "zero")) + (1- plogis(coef(fit_zipois, model = "zero"))) * dpois(0:15, exp(coef(fit_zipois)["count_(Intercept)"]))), shape = 4)  +
+  geom_point(aes(color = "zinb", x = 0:15, y = plogis(coef(fit_zinb, model = "zero")) + (1- plogis(coef(fit_zinb, model = "zero"))) * dnbinom(0:15, size = fit_zinb$theta, mu = exp(coef(fit_zinb, model = "count")))), shape = 3) + 
+  theme_bw() + 
+  scale_color_manual(values = c(2,3,4,5), labels = c("Poisson", "NB", "ZI-Poisson", "ZI-NB"))+
+  labs(color = "Fitted Distributions") +
+  xlab("SFD") + 
+  ylab("Proportion/Probability")
+  
+ggsave("./plots/SFD_emprical_vs_fitted.jpg", SFD.emp.true, width = 12, height = 8, dpi = 300)
+```
+
+
+
+
+# Zero-inflated Negative Binomial model
+
+excluding subjects with missing at all time points
+```{r naive-nb}
+dat.comp <- dat %>% filter(n_miss < 3, time != 1) %>% 
+  mutate(time = factor(time, levels = c(2,3)))
+mdl.nb <- glmer.nb(SFD ~ group*time + SFD_baseline + 
+                   (1 | school), data = dat.comp, control = glmerControl(optimizer = "bobyqa"))
+
+
+
+dat %>% filter(time == "1") %>% group_by(school) %>% 
+  summarise(mean_SFD = mean(SFD, na.rm = T), var_SFD = var(SFD, na.rm = T))
+
+dat %>% filter(time == "2") %>% group_by(school) %>% 
+  summarise(mean_SFD = mean(SFD, na.rm = T), var_SFD = var(SFD, na.rm = T))
+
+dat %>% filter(time == "3") %>% group_by(school) %>% 
+  summarise(mean_SFD = mean(SFD, na.rm = T), var_SFD = var(SFD, na.rm = T))
+
+summary(mdl.nb)
+```
+
+
+
+```{r zinb}
+mdl.zinb.0 <- glmmTMB(SFD ~ 1 + (1|school) + (1|ID) , 
+                    ziformula = ~ 1 , 
+                    data = dat,
+                    family = nbinom2, 
+                    control=glmmTMBControl(optimizer=optim,optArgs=list(method="BFGS")))
+
+mdl.zinb.0
+
+mdl.zinb.1 <- glmmTMB(SFD ~ group*time  + (1|school)+ (1|ID) , 
+                    ziformula = ~ 1 , 
+                    data = dat,
+                    family = nbinom2, 
+                    control=glmmTMBControl(optimizer=optim,optArgs=list(method="BFGS")))
+
+summary(mdl.zinb.1)
+mdl.zinb.2 <- glmmTMB(SFD ~ group*time+ (1|school)+ (1|ID) , 
+                    zi = ~ 1, 
+                    data = dat,
+                    family = nbinom2, 
+                    control=glmmTMBControl(optimizer=optim,optArgs=list(method="BFGS")))
+
+summary(mdl.zinb.2)
+
+anova(mdl.zinb.1, mdl.zinb.2)
+
+
+# null model
+mdl.zinb.null <- glmmTMB(SFD ~ time  + (1|school) + (1|ID), 
+                    zi = ~ group, 
+                    data = dat,
+                    family = nbinom2,
+                    control=glmmTMBControl(optimizer=optim,optArgs=list(method="BFGS")))
+
+anova(mdl.zinb.2, mdl.zinb.null)
+
+# random effects in zi model
+mdl.zinb.3 <- glmmTMB(SFD ~ group*time  + (1|school) , 
+                    zi = ~ group + (1|school), 
+                    data = dat,
+                    family = nbinom2,
+                    control=glmmTMBControl(optimizer=optim,optArgs=list(method="BFGS")))
+
+anova(mdl.zinb.2, mdl.zinb.3) # model3 cannot converge
+
+
+```
+```{r}
+library(gtsummary)
+library(knitr)
+library(kableExtra)
+
+coef.mdl.zinb.2 <- broom.mixed::tidy(mdl.zinb.2, conf.int = TRUE)
+
+## calculate icc
+sigma_S = coef.mdl.zinb.2[8,"estimate"][[1]]
+sigma_C = coef.mdl.zinb.2[9,"estimate"][[1]]
+
+ICC <- (sigma_S^2)/(sigma_S^2 + sigma_C^2+ log(1 + 1/(exp(fit_zinb$coefficients$count[[1]]))+ 1/(fit_zinb$theta)))
+
+coef.mdl.zinb.2 %>% 
+  select(effect, component, term, estimate, conf.low, conf.high, p.value) %>% 
+  kable(digits = 3, col.names = c("Effects", "Model"))
+  
+ICC
+
+```
+
+
+
+
+
